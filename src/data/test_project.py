@@ -1,5 +1,5 @@
 import unittest
-from build import EnvironmentVariables, DirectoryValues
+from builder import EnvironmentVariables, DirectoryValues
 import requests
 import os
 import pickle

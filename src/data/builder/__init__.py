@@ -1,2 +1,2 @@
-from build.project_variables import EnvironmentVariables
-from build.project_variables import DirectoryValues
+from builder.project_variables import EnvironmentVariables
+from builder.project_variables import DirectoryValues

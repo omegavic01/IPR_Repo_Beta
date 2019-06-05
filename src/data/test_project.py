@@ -38,8 +38,8 @@ class TestProjDirVariables(unittest.TestCase):
     def test_type_of_dir_cls_raw_dri(self):
         self.assertIsInstance(self.dir_cls.raw_dir(), str)
 
-    def test_type_of_dir_cls_report_dir(self):
-        self.assertIsInstance(self.dir_cls.report_dir(), str)
+    def test_type_of_dir_cls_reports_dir(self):
+        self.assertIsInstance(self.dir_cls.reports_dir(), str)
 #class TestAPIMethods(unittest.TestCase):
 #
 #    def setUp(self):

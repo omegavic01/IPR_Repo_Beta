@@ -1,5 +1,6 @@
 import os
 from dotenv import find_dotenv, load_dotenv
+from pathlib import Path
 
 
 class EnvironmentVariables:
@@ -30,26 +31,47 @@ class EnvironmentVariables:
 
 
 class DirectoryValues:
-    """Builds the commonly used directories for the project."""
+    """Builds the commonly used directories for the project.
+
+    The static methods are for the initializer in building of the directory
+    paths.
+
+    The methods are for the client to call as needed.
+    """
 
     def __init__(self):
-        self._project_dir = os.path.join(os.path.dirname(__file__),
-                                         os.pardir,
-                                         os.pardir)
+        self._project_dir = Path(__file__).resolve().parents[3]
         self._raw_data_path = os.path.join(self._project_dir,
-                                           'data',
-                                           'raw')
+                                           self._data_foldername(),
+                                           self._raw_foldername())
         self._interim_data_path = os.path.join(self._project_dir,
-                                               'data',
-                                               'interim')
+                                               self._data_foldername(),
+                                               self._interim_foldername())
         self._processed_data_path = os.path.join(self._project_dir,
-                                                 'data',
-                                                 'processed')
-        self._report_data_path = os.path.join(self._project_dir,
-                                              'reports')
+                                                 self._data_foldername(),
+                                                 self._processed_foldername())
+        self._reports_data_path = os.path.join(self._project_dir,
+                                               self._reports_foldername())
 
-    def proj_dir(self):
-        return self._project_dir
+    @staticmethod
+    def _data_foldername():
+        return 'data'
+
+    @staticmethod
+    def _raw_foldername():
+        return 'raw'
+
+    @staticmethod
+    def _interim_foldername():
+        return 'interim'
+
+    @staticmethod
+    def _processed_foldername():
+        return 'processed'
+
+    @staticmethod
+    def _reports_foldername():
+        return 'reports'
 
     def raw_dir(self):
         return self._raw_data_path
@@ -60,5 +82,5 @@ class DirectoryValues:
     def processed_dir(self):
         return self._processed_data_path
 
-    def report_dir(self):
-        return self._report_data_path
+    def reports_dir(self):
+        return self._reports_data_path

@@ -1,6 +1,23 @@
+#!/usr/bin/python
+""" Copyright 2007 HVictor
+Licensed to PSF under a Contributor Agreement.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+"""
+
 import os
-from dotenv import find_dotenv, load_dotenv
 from pathlib import Path
+from dotenv import find_dotenv, load_dotenv
 
 
 class EnvironmentVariables:
@@ -10,24 +27,28 @@ class EnvironmentVariables:
     load_dotenv(find_dotenv())
 
     def __init__(self):
-        self._payload = {
+        self._ddi_payload = {
             'url': os.environ.get("DDI_URL"),
             'username': os.environ.get("DDI_USERNAME"),
             'password': os.environ.get("DDI_PASSWORD")
         }
-        self._header = os.environ.get("IPR_HEADER_ROW").split(',')
+        self._ipr_header = os.environ.get("IPR_HEADER_ROW").split(',')
 
     def payload_url(self):
-        return self._payload['url']
+        """Returns DDI_URL from .env file."""
+        return self._ddi_payload['url']
 
     def payload_username(self):
-        return self._payload['username']
+        """Returns DDI_USERNAME from .env file."""
+        return self._ddi_payload['username']
 
     def payload_password(self):
-        return self._payload['password']
+        """Returns DDI_PASSWORD from .env file."""
+        return self._ddi_payload['password']
 
     def header_row(self):
-        return self._header
+        """Returns IPR_HEADER_ROW from .env file."""
+        return self._ipr_header
 
 
 class DirectoryValues:
@@ -78,13 +99,17 @@ class DirectoryValues:
         return 'reports'
 
     def raw_dir(self):
+        """Returns raw folder directory path."""
         return self._raw_data_path
 
     def interim_dir(self):
+        """Returns interim folder directory path."""
         return self._interim_data_path
 
     def processed_dir(self):
+        """Returns processed folder directory path."""
         return self._processed_data_path
 
     def reports_dir(self):
+        """Returns reports folder directory path."""
         return self._reports_data_path

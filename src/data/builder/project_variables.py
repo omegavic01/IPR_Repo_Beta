@@ -52,6 +52,10 @@ class DirectoryValues:
                                                  self._processed_foldername())
         self._reports_data_path = os.path.join(self._project_dir,
                                                self._reports_foldername())
+        os.makedirs(self._raw_data_path, exist_ok=True)
+        os.makedirs(self._interim_data_path, exist_ok=True)
+        os.makedirs(self._processed_data_path, exist_ok=True)
+        os.makedirs(self._reports_data_path, exist_ok=True)
 
     @staticmethod
     def _data_foldername():

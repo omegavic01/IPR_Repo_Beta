@@ -16,10 +16,11 @@ permissions and limitations under the License.
 
 """
 
-import os
 from builder import EnvironmentValues, DirectoryValues, LoggingValues
 import logging
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import json
 import time
 
@@ -91,6 +92,17 @@ class DdiCallTypes:
     def network_views():
         return 'networkview?'
 
+    @staticmethod
+    def networks(view):
+        return "network?_return_fields=" \
+               "extattrs," \
+               "comment," \
+               "network," \
+               "network_view," \
+               "utilization&" \
+               "network_view=" + view + \
+               "&_max_results=-5000"
+
 
 class DdiCallFilenames:
 
@@ -101,3 +113,7 @@ class DdiCallFilenames:
     @staticmethod
     def network_views_filename():
         return 'network_views.pkl'
+
+    @staticmethod
+    def networks_filename():
+        return 'networks.pkl'

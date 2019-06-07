@@ -13,6 +13,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
+
 """
 
 import os
@@ -20,9 +21,10 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
 
-class EnvironmentVariables:
+class EnvironmentValues:
     """Loads the .env file and assigns the values so that the values may be
     called.
+
     """
     load_dotenv(find_dotenv())
 
@@ -58,6 +60,7 @@ class DirectoryValues:
     paths.
 
     The methods are for the client to call as needed.
+
     """
 
     def __init__(self):
@@ -113,3 +116,27 @@ class DirectoryValues:
     def reports_dir(self):
         """Returns reports folder directory path."""
         return self._reports_data_path
+
+
+class LoggingValues:
+    """Provides a central source for logging values."""
+    def __init__(self):
+        self._logging_format = self._log_format()
+        self._logging_filename = self._log_filename()
+
+    @staticmethod
+    def _log_format():
+        return '[%(asctime)s, %(name)s, %(levelname)s] %(message)s'
+
+    @staticmethod
+    def _log_filename():
+        return 'logfile.log'
+
+    def log_format(self):
+        """Returns logging format."""
+        return self._logging_format
+
+    def log_filename(self):
+        """Returns logging filename."""
+        return self._logging_filename
+

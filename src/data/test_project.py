@@ -1,5 +1,7 @@
 import unittest
-from builder import EnvironmentVariables, DirectoryValues
+from builder import EnvironmentValues, DirectoryValues, LoggingValues
+from builder import Writer, Reader
+from ddi_ipam_pull import DdiCallTypes, IpamApiRequestGet, DdiCallFilenames
 import requests
 import os
 import pickle
@@ -9,7 +11,7 @@ import json
 class TestProjEnvVariables(unittest.TestCase):
 
     def setUp(self):
-        self.env_cls = EnvironmentVariables()
+        self.env_cls = EnvironmentValues()
 
     def test_type_of_env_cls_payload_url(self):
         self.assertIsInstance(self.env_cls.payload_url(), str)

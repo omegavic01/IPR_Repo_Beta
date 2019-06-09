@@ -32,7 +32,7 @@ class _BaseProgramClass:
 
 class ProgramClass(_BaseProgramClass):
 
-    def extensible_attribute_call(self):
+    def get_extensible_attributes(self):
         self._logger.info('Pulling current Extensible Attribute data.')
         _ext_attr_data = self.ext_call_setup_cls.ddi_call(
                          self.call_types_cls.extensible_attributes())
@@ -42,7 +42,7 @@ class ProgramClass(_BaseProgramClass):
                                     _ext_attr_data)
         self._logger.info('Ext Attr data written to .pkl file in Raw Dir.')
 
-    def network_view_call(self):
+    def get_network_views(self):
         self._logger.info('Pulling current Network View Data.')
         _network_view_data = self.ext_call_setup_cls.ddi_call(
                             self.call_types_cls.
@@ -53,26 +53,46 @@ class ProgramClass(_BaseProgramClass):
                                     _network_view_data)
         self._logger.info('Network View data written to .pkl file in raw Dir.')
 
-    def _get_network(self, view):
+    def _get_ddi_networks(self, call):
         self.dl_sem.acquire()
         try:
-            networks = self.ext_call_setup_cls.ddi_call(self.call_types_cls.
-                                                        networks(view))
+            networks = self.ext_call_setup_cls.ddi_call(call)
             with self.dl_lock:
                 self._network_data += networks
         finally:
             self.dl_sem.release()
 
     def get_networks(self):
-        self._logger.info('Pulling current IPAM Data.')
-        network_views = self.reader_cls.read_from_pkl(
-                            self.dir_cls.raw_dir(),
-                            self.filenames_cls.
-                            network_views_filename())
+        self._logger.info('Pulling IPAM Networks.')
+        network_views = self.return_network_views()
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
-            t = threading.Thread(target=self._get_network,
+            network_call = self.call_types_cls.networks(_ref['name'])
+            t = threading.Thread(target=self._get_ddi_networks,
+                                 args=(network_call,))
+            t.start()
+            threads.append(t)
+
+        for t in threads:
+            t.join()
+        end = time.perf_counter()
+
+        self._logger.info("Downloaded {} Networks in {} seconds".
+                          format(len(self._network_data), end - start))
+
+        self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
+                                    self.filenames_cls.networks_filename(),
+                                    self._network_data)
+        self._logger.info('DDI networks data written to .pkl file in raw Dir.')
+
+    def get_networkcontainers(self):
+        self._logger.info('Pulling IPAM Networkcontainers.')
+        network_views = self.return_network_views()
+        start = time.perf_counter()
+        threads = []
+        for _ref in network_views:
+            t = threading.Thread(target=self._get_ddi_networks,
                                  args=(_ref['name'],))
             t.start()
             threads.append(t)
@@ -87,5 +107,9 @@ class ProgramClass(_BaseProgramClass):
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.networks_filename(),
                                     self._network_data)
-        self._logger.info('Network Data written to .pkl file in raw Dir.')
+        self._logger.info('DDI networks data written to .pkl file in raw Dir.')
 
+    def return_network_views(self):
+        return self.reader_cls.read_from_pkl(self.dir_cls.raw_dir(),
+                                             self.filenames_cls.
+                                             network_views_filename())

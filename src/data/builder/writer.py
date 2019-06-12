@@ -19,16 +19,25 @@ import pickle
 
 
 class Writer:
+    """Class used to write data to specific types of files."""
 
     @staticmethod
     def write_to_pkl(file_dir, file_name, data):
+        """Method that takes the arg's and writes a .pkl file.
+
+        args:
+            file_dir: path to files location
+            file_name: name of file to be opened
+        """
         with open(file_dir + "\\" + file_name, 'wb') as output:
             pickle.dump(data, output)
 
     @staticmethod
     def write_to_csv(file_dir, file_name, data):
-        pass
+        """STILL IN DEVELOPMENT!"""
+        return file_dir, file_name, data
 
     @staticmethod
     def write_to_xlsx(file_dir, file_name, data):
-        pass
+        """STILL IN DEVELOPMENT!"""
+        return file_dir, file_name, data

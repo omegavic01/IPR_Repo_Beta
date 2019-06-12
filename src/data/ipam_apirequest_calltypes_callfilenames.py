@@ -16,39 +16,37 @@ permissions and limitations under the License.
 
 """
 
-from builder import EnvironmentValues, DirectoryValues, LoggingValues
 import logging
-import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import json
 import time
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from builder import EnvironmentValues, DirectoryValues, LoggingValues
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-class _BaseDdiIpamPull:
+class IpamApiRequest:
+    """IPAM API Call Definition."""
 
     def __init__(self):
         self._env_cls = EnvironmentValues()
         self._dir_cls = DirectoryValues()
         self._log_cls = LoggingValues()
-        self._ddi_url = self._env_cls.payload_url()
-        self._ddi_username = self._env_cls.payload_username()
-        self._ddi_password = self._env_cls.payload_password()
+        self._ipam_url = self._env_cls.payload_url()
+        self._ipam_username = self._env_cls.payload_username()
+        self._ipam_password = self._env_cls.payload_password()
         logging.getLogger("urllib3").setLevel(logging.WARNING)
         logging.basicConfig(filename=self._log_cls.log_filename(),
                             level=logging.INFO,
                             format=self._log_cls.log_format())
         self._logger = logging.getLogger(__name__)
 
-
-class IpamApiRequestGet(_BaseDdiIpamPull):
-
-    def ddi_call(self, _):
-        """DDI API Call.
+    def ipam_api_request(self, _):
+        """IPAM API Call.
 
         Args:
             self._item: The missing puzzle piece needed for the api call.  The
-            return value of Class DdiCallTypes.
+            return value of Class IpamCallTypes.
         Returns:
             The requests content decoded to 'utf-8' then returns as a python
             object after going through a json.loads process.
@@ -56,13 +54,13 @@ class IpamApiRequestGet(_BaseDdiIpamPull):
         """
         trynetwork = 3
         net_call = None
-        self._logger.info('Calling DDI for: %s', _)
+        self._logger.info('Calling IPAM for: %s', _)
         for iview in range(trynetwork):
             try:
-                net_call = requests.get(self._ddi_url +
+                net_call = requests.get(self._ipam_url +
                                         _,
-                                        auth=(self._ddi_username,
-                                              self._ddi_password),
+                                        auth=(self._ipam_username,
+                                              self._ipam_password),
                                         verify=False)
                 break
             except requests.exceptions.ConnectionError as nerrt:
@@ -82,19 +80,47 @@ class IpamApiRequestGet(_BaseDdiIpamPull):
         return json.loads(net_call.content.decode('utf-8'))
 
 
-class DdiCallTypes:
+class IpamCallTypes:
+    """Defined call types needed for the api calls."""
 
     @staticmethod
     def extensible_attributes():
+        """Returns the fields needed for an extensible attributes ipam call."""
         return 'extensibleattributedef?'
 
     @staticmethod
+    def extensible_attributes_list_values():
+        """Returns the fields needed for an extensible attributes ipam call."""
+        return "extensibleattributedef?" \
+               "_return_fields=" \
+               "list_values," \
+               "comment," \
+               "name," \
+               "type"
+
+    @staticmethod
     def network_views():
+        """Returns the fields needed for a network views ipam call."""
         return 'networkview?'
 
     @staticmethod
     def networks(view):
-        return "network?_return_fields=" \
+        """Returns the fields needed from networks ipam call."""
+        return "network?" \
+               "_return_fields=" \
+               "extattrs," \
+               "comment," \
+               "network," \
+               "network_view," \
+               "utilization&" \
+               "network_view=" + view + \
+               "&_max_results=-5000"
+
+    @staticmethod
+    def networkcontainers(view):
+        """Returns the fields needed from networkcontainers ipam call."""
+        return "networkcontainer?" \
+               "_return_fields=" \
                "extattrs," \
                "comment," \
                "network," \
@@ -104,16 +130,30 @@ class DdiCallTypes:
                "&_max_results=-5000"
 
 
-class DdiCallFilenames:
+class IpamCallFilenames:
+    """Filenames defined for ipam pulls."""
 
     @staticmethod
     def extensible_attributes_filename():
+        """Returns filename for extensible attributes."""
         return 'extensible_attributes.pkl'
 
     @staticmethod
+    def extensible_attributes_list_values_filename():
+        """Returns filename for extensible attributes."""
+        return 'extensible_attributes_list_values.pkl'
+
+    @staticmethod
     def network_views_filename():
+        """Returns filename for network views."""
         return 'network_views.pkl'
 
     @staticmethod
     def networks_filename():
+        """Returns filename for networks filename."""
         return 'networks.pkl'
+
+    @staticmethod
+    def networkcontainers_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'networkcontainers.pkl'

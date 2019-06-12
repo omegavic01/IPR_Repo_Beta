@@ -139,4 +139,3 @@ class LoggingValues:
     def log_filename(self):
         """Returns logging filename."""
         return self._logging_filename
-

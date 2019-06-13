@@ -21,7 +21,7 @@ import json
 import time
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-from builder import EnvironmentValues, DirectoryValues, LoggingValues
+from builder import EnvironmentValues, LoggingValues
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
@@ -30,7 +30,6 @@ class IpamApiRequest:
 
     def __init__(self):
         self._env_cls = EnvironmentValues()
-        self._dir_cls = DirectoryValues()
         self._log_cls = LoggingValues()
         self._ipam_url = self._env_cls.payload_url()
         self._ipam_username = self._env_cls.payload_username()
@@ -52,10 +51,10 @@ class IpamApiRequest:
             object after going through a json.loads process.
 
         """
-        trynetwork = 3
+        try_call_countdown = 3
         net_call = None
         self._logger.info('Calling IPAM for: %s', _)
-        for iview in range(trynetwork):
+        for countdown in range(try_call_countdown):
             try:
                 net_call = requests.get(self._ipam_url +
                                         _,
@@ -64,21 +63,25 @@ class IpamApiRequest:
                                         verify=False)
                 break
             except requests.exceptions.ConnectionError as nerrt:
-                if iview < trynetwork - 1:
+                if countdown < try_call_countdown - 1:
                     self._logger.warning('Failed %s lookup. Round %s of 3.',
                                          _,
-                                         iview)
+                                         countdown)
                     time.sleep(5)
                     continue
                 else:
                     self._logger.warning(
                         'Timeout Error for container view: %s, %s, %s',
                         _,
-                        iview,
+                        countdown,
                         nerrt)
                     return []
-        return json.loads(net_call.content.decode('utf-8'))
+        return net_call
+        # return json.loads(net_call.content.decode('utf-8'))
 
+    @staticmethod
+    def load_as_json(_):
+        return json.loads(_)
 
 class IpamCallTypes:
     """Defined call types needed for the api calls."""

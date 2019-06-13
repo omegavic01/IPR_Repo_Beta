@@ -1,6 +1,5 @@
 import unittest
 from builder import EnvironmentValues, DirectoryValues, LoggingValues
-from builder import Writer, Reader
 
 
 class TestProjEnvVariables(unittest.TestCase):

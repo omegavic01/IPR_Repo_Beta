@@ -1,4 +1,22 @@
-from builder import EnvironmentValues, DirectoryValues, LoggingValues
+#!/usr/bin/python
+""" Copyright 2007 HVictor
+Licensed to PSF under a Contributor Agreement.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+"""
+
+from builder import DirectoryValues, LoggingValues
 from builder import Writer, Reader
 from ipam_apirequest_calltypes_callfilenames import \
     IpamCallTypes, \
@@ -19,7 +37,6 @@ class _BaseIpamGetsToWrite:
                             format=self._log_cls.log_format())
         self._logger = logging.getLogger(__name__)
         self._logger.info('Loading Project Environment Variables.')
-        self.env_cls = EnvironmentValues()
         self.dir_cls = DirectoryValues()
         self.write_cls = Writer()
         self.reader_cls = Reader()
@@ -87,8 +104,6 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
-            if _ref == network_views[4]:
-                break
             network_call = self.call_types_cls.networks(_ref['name'])
             t = threading.Thread(target=self._get_ipam_networks,
                                  args=(network_call,))

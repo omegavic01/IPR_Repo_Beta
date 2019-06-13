@@ -37,8 +37,11 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
 
     def get_extensible_attributes(self):
         self._logger.info('Pulling current Extensible Attribute data.')
-        _ext_attr_data = self.ext_call_setup_cls.ipam_api_request(
-                         self.call_types_cls.extensible_attributes())
+
+        _ext_attr_data = self.ext_call_setup_cls.loads_as_json(
+            self.ext_call_setup_cls.ipam_api_request(
+                self.call_types_cls.extensible_attributes()).
+            text)
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
                                     extensible_attributes_filename(),
@@ -47,19 +50,22 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
 
     def get_extensible_attributes_list_values(self):
         self._logger.info('Pulling current Extensible Attribute data.')
-        _ext_attr_list_data = self.ext_call_setup_cls.ipam_api_request(
-            self.call_types_cls.extensible_attributes_list_values())
-        self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
-                                    self.filenames_cls.
-                                    extensible_attributes_list_values_filename(),
-                                    _ext_attr_list_data)
-        self._logger.info('Ext Attr list data written to .pkl file in Raw Dir.')
+        _ext_attr_list_data = self.ext_call_setup_cls.loads_as_json(
+            self.ext_call_setup_cls.ipam_api_request(
+                self.call_types_cls.extensible_attributes_list_values()).
+            text)
+        self.write_cls.write_to_pkl(
+            self.dir_cls.raw_dir(),
+            self.filenames_cls.extensible_attributes_list_values_filename(),
+            _ext_attr_list_data)
+        self._logger.info('Ext Att list data written to .pkl file in Raw Dir.')
 
     def get_network_views(self):
         self._logger.info('Pulling current Network View Data.')
-        _network_view_data = self.ext_call_setup_cls.ipam_api_request(
-                            self.call_types_cls.
-                            network_views())
+        _network_view_data = self.ext_call_setup_cls.loads_as_json(
+            self.ext_call_setup_cls.ipam_api_request(
+                self.call_types_cls.network_views()).
+            text)
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
                                     network_views_filename(),

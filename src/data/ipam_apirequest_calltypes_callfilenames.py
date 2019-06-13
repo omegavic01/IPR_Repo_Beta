@@ -77,11 +77,11 @@ class IpamApiRequest:
                         nerrt)
                     return []
         return net_call
-        # return json.loads(net_call.content.decode('utf-8'))
 
     @staticmethod
-    def load_as_json(_):
+    def loads_as_json(_):
         return json.loads(_)
+
 
 class IpamCallTypes:
     """Defined call types needed for the api calls."""

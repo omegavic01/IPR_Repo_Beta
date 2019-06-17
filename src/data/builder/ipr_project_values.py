@@ -139,3 +139,14 @@ class LoggingValues:
     def log_filename(self):
         """Returns logging filename."""
         return self._logging_filename
+
+
+class DataFilenames:
+
+    @staticmethod
+    def ipam_dump_interim_xlsx():
+        return 'ipam_dump_interim.xlsx'
+
+    @staticmethod
+    def ipam_dump_interim_pickle():
+        return 'ipam_dump_interim.pickle'

@@ -92,7 +92,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
     def _get_ipam_networks(self, call):
         self.dl_sem.acquire()
         try:
-            networks = self.ext_call_setup_cls.ipam_api_request(call)
+            networks = self.ext_call_setup_cls.loads_as_json(
+                self.ext_call_setup_cls.ipam_api_request(call).text)
             with self.dl_lock:
                 self._network_data += networks
         finally:
@@ -104,6 +105,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
+            if _ref == network_views[5]:
+                break
             network_call = self.call_types_cls.networks(_ref['name'])
             t = threading.Thread(target=self._get_ipam_networks,
                                  args=(network_call,))
@@ -121,6 +124,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
                                     self.filenames_cls.
                                     networks_filename(),
                                     self._network_data)
+        self._network_data = []
         self._logger.info('IPAM data written to .pkl file in raw Dir.')
 
     def get_networkcontainers(self):
@@ -129,6 +133,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
+            if _ref == network_views[5]:
+                break
             network_call = self.call_types_cls.networkcontainers(_ref['name'])
             t = threading.Thread(target=self._get_ipam_networks,
                                  args=(network_call,))
@@ -146,6 +152,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
                                     self.filenames_cls.
                                     networkcontainers_filename(),
                                     self._network_data)
+        self._network_data = []
         self._logger.info('IPAM data written to .pkl file in raw Dir.')
 
     def return_network_views(self):

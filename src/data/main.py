@@ -13,7 +13,7 @@ Option 2: Good place to call a single network view.  Set breakpoint to use for
 """If you want to gather all the ipam data and pickle the data.
 Option 1.
 """
-gather_current_ipam_data = False
+gather_current_ipam_data = True
 if gather_current_ipam_data:
     # Call IPAM data and Write to .pkl file.
     ip_data = IpamGetsToWrite()
@@ -21,13 +21,13 @@ if gather_current_ipam_data:
 #    ip_data.get_extensible_attributes_list_values()
 #    ip_data.get_network_views()
     ip_data.get_networks()
-#    ip_data.get_networkcontainers()
+    ip_data.get_networkcontainers()
 
-gather_network_data_for_a_network_view = True
 
 """Good place to debug network data from a network view.
 Option 2.
 """
+gather_network_data_for_a_network_view = False
 if gather_network_data_for_a_network_view:
     # Call Ipam data.
     ipam_api_request_cls = IpamApiRequest()

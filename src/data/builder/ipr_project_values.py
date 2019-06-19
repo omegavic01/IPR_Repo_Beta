@@ -141,12 +141,20 @@ class LoggingValues:
         return self._logging_filename
 
 
-class DataFilenames:
-
+class DataFileNames:
+    """Place to store filenames that."""
     @staticmethod
     def ipam_dump_interim_xlsx():
         return 'ipam_dump_interim.xlsx'
 
     @staticmethod
     def ipam_dump_interim_pickle():
-        return 'ipam_dump_interim.pickle'
+        return 'ipam_dump_interim.pkl'
+
+    @staticmethod
+    def ipam_dump_processed_xlsx():
+        return 'ipam_dump_processed.xlsx'
+
+    @staticmethod
+    def ipam_dump_processed_pickle():
+        return 'ipam_dump_processed.pkl'

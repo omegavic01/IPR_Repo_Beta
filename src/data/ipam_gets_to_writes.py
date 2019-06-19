@@ -105,8 +105,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
-            if _ref == network_views[5]:
-                break
+            # if _ref == network_views[5]:
+            #     break
             network_call = self.call_types_cls.networks(_ref['name'])
             t = threading.Thread(target=self._get_ipam_networks,
                                  args=(network_call,))
@@ -133,8 +133,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         start = time.perf_counter()
         threads = []
         for _ref in network_views:
-            if _ref == network_views[5]:
-                break
+            # if _ref == network_views[5]:
+            #     break
             network_call = self.call_types_cls.networkcontainers(_ref['name'])
             t = threading.Thread(target=self._get_ipam_networks,
                                  args=(network_call,))

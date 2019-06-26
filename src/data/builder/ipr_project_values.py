@@ -19,6 +19,7 @@ permissions and limitations under the License.
 import os
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
+import json
 
 
 class EnvironmentValues:
@@ -34,7 +35,8 @@ class EnvironmentValues:
             'username': os.environ.get("DDI_USERNAME"),
             'password': os.environ.get("DDI_PASSWORD")
         }
-        self._ipr_header = os.environ.get("IPR_HEADER_ROW").split(',')
+        self._ipr_header_dict = os.environ.get("IPR_HEADER_ROW_DICT")
+        self._ipr_header_list = os.environ.get("IPR_HEADER_ROW_LIST")
 
     def payload_url(self):
         """Returns DDI_URL from .env file."""
@@ -48,9 +50,13 @@ class EnvironmentValues:
         """Returns DDI_PASSWORD from .env file."""
         return self._ddi_payload['password']
 
-    def header_row(self):
+    def header_row_dict(self):
         """Returns IPR_HEADER_ROW from .env file."""
-        return self._ipr_header
+        return json.loads(self._ipr_header_dict)
+
+    def header_row_list(self):
+        """Returns IPR_HEADER_ROW from .env file."""
+        return self._ipr_header_list.split(',')
 
 
 class DirectoryValues:
@@ -142,19 +148,80 @@ class LoggingValues:
 
 
 class DataFileNames:
-    """Place to store filenames that."""
-    @staticmethod
-    def ipam_dump_interim_xlsx():
-        return 'ipam_dump_interim.xlsx'
+    """Place to store filenames."""
 
     @staticmethod
-    def ipam_dump_interim_pickle():
-        return 'ipam_dump_interim.pkl'
+    def ipam_dump_interim_xlsx():
+        """Interim spreadhseet name."""
+        return 'ipam_dump_interim_xlsx.xlsx'
+
+    @staticmethod
+    def ipam_dump_interim_panda():
+        """Interim panda data pickle file name."""
+        return 'ipam_dump_interim_panda.pkl'
+
+    @staticmethod
+    def ipam_dump_interim_dicted():
+        """Interim dictionary data pickle file name."""
+        return 'ipam_dump_interim_dicted.pkl'
 
     @staticmethod
     def ipam_dump_processed_xlsx():
+        """Processed spreadsheet filename."""
         return 'ipam_dump_processed.xlsx'
 
     @staticmethod
     def ipam_dump_processed_pickle():
+        """Processed pickled filename."""
         return 'ipam_dump_processed.pkl'
+
+    @staticmethod
+    def extensible_attributes_filename():
+        """Returns filename for extensible attributes."""
+        return 'extensible_attributes.pkl'
+
+    @staticmethod
+    def extensible_attributes_list_values_filename():
+        """Returns filename for extensible attributes."""
+        return 'extensible_attributes_list_values.pkl'
+
+    @staticmethod
+    def network_views_filename():
+        """Returns filename for network views."""
+        return 'network_views.pkl'
+
+    @staticmethod
+    def networks_filename():
+        """Returns filename for networks filename."""
+        return 'networks.pkl'
+
+    @staticmethod
+    def networkcontainers_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'networkcontainers.pkl'
+
+
+class ProjMiscValues:
+    pass
+
+#    @staticmethod
+#    def ipam_sheet_list():
+#        sheets = ['MASTER',
+#                  'Full-Dataset',-
+#                  'Filt-Cidr-32',-
+#                  'Filt-100.88-Cidr-29',
+#                  'Filt-100.64-Cidr-29',
+#                  'Filt-Cidr-15-to-Cidr-1',
+#                  'Filt-Public-ip-View',-
+#                  'Filt-Wan_test-View',-
+#                  'Filt-OMC-IT-Parent-Subnet',-
+#                  'Filt-Leaf',-
+#                  'Filt-Dup',-
+#                  'Filt-Ignore',-
+#                  'Filt-Uncategorized',
+#                  'Filt-Divest',-
+#                  'Filt-Re-IP',-
+#                  'Filt-Drop Reserve']-
+#        sheets.sort()
+#        sheets.reverse()
+#        return sheets

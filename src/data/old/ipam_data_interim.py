@@ -1,6 +1,6 @@
 from builder import DirectoryValues
+from builder import DataFileNames
 from builder import Reader
-from ipam_apirequest_calltypes_callfilenames import IpamCallFilenames
 import pandas as pd
 from collections import MutableMapping
 
@@ -13,7 +13,7 @@ class IpamDataInterim:
 
     def __init__(self):
         self.dir_cls = DirectoryValues()
-        self.ipam_filenames_cls = IpamCallFilenames()
+        self.ipam_filenames_cls = DataFileNames()
         self.reader_cls = Reader()
 
         # Load Networks Pickled Data
@@ -24,6 +24,13 @@ class IpamDataInterim:
             self.dir_cls.raw_dir(),
             self.ipam_filenames_cls.networkcontainers_filename())
         self.all_nets = self.networks + self.networkcontainers
+
+    def run_ipam_interim(self, xlsx, pickle):
+        flattened_dict_data = self.flatten_data(self.all_nets)
+        output_data = self.panda_processing_of_flattened_data(
+            flattened_dict_data)
+        output_data.to_excel(self.dir_cls.interim_dir() + '\\' + xlsx)
+        output_data.to_pickle(self.dir_cls.interim_dir() + '\\' + pickle)
 
     def _convert_flatten(self, data, parent_key='', sep='_'):
         """Method to convert input of nested dict's to a flattened dict
@@ -89,11 +96,4 @@ class IpamDataInterim:
         net_flat_df.index = range(len(net_flat_df.index))
         net_flat_df.index += 10000
         return net_flat_df
-
-    def run_ipam_interim(self, xlsx, pickle):
-        flattened_dict_data = self.flatten_data(self.all_nets)
-        output_data = self.panda_processing_of_flattened_data(
-            flattened_dict_data)
-        output_data.to_excel(self.dir_cls.interim_dir() + '\\' + xlsx)
-        output_data.to_pickle(self.dir_cls.interim_dir() + '\\' + pickle)
 

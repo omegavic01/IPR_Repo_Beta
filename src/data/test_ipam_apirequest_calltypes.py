@@ -18,67 +18,10 @@ permissions and limitations under the License.
 
 import unittest
 import json
-from ipam_apirequest_calltypes_callfilenames import IpamCallFilenames
-from ipam_apirequest_calltypes_callfilenames import IpamCallTypes
-from ipam_apirequest_calltypes_callfilenames import IpamApiRequest
+from ipam_apirequest_calltypes import IpamCallTypes
+from ipam_apirequest_calltypes import IpamApiRequest
 
 
-class TestIpamCallFilenames(unittest.TestCase):
-
-    def setUp(self):
-        """Testing IpamCallFilenames()"""
-        self.ipam_call_filenames_cls = IpamCallFilenames()
-
-    def test_create_IpamCallFilenames_intance(self):
-        self.ipam_call_filenames_cls = IpamCallFilenames()
-
-    def test_type_extensible_attributes_filename(self):
-        self.assertIsInstance(self.ipam_call_filenames_cls.
-                              extensible_attributes_filename(),
-                              str)
-
-    def test_eq_extensible_attributes_filename(self):
-        self.assertEqual('extensible_attributes.pkl',
-                         self.ipam_call_filenames_cls.
-                         extensible_attributes_filename())
-
-    def test_type_extensible_attributes_list_values_filename(self):
-        self.assertIsInstance(self.ipam_call_filenames_cls.
-                              extensible_attributes_list_values_filename(),
-                              str)
-
-    def test_eq_extensible_attributes_list_values_filename(self):
-        self.assertEqual('extensible_attributes_list_values.pkl',
-                         self.ipam_call_filenames_cls.
-                         extensible_attributes_list_values_filename())
-
-    def test_type_network_views_filename(self):
-        self.assertIsInstance(self.ipam_call_filenames_cls.
-                              network_views_filename(),
-                              str)
-
-    def test_eq_network_views_filename(self):
-        self.assertEqual('network_views.pkl',
-                         self.ipam_call_filenames_cls.network_views_filename())
-
-    def test_type_networks_filename(self):
-        self.assertIsInstance(self.ipam_call_filenames_cls.
-                              networks_filename(),
-                              str)
-
-    def test_eq_networks_filename(self):
-        self.assertEqual('networks.pkl',
-                         self.ipam_call_filenames_cls.networks_filename())
-
-    def test_type_networkcontainers_filename(self):
-        self.assertIsInstance(self.ipam_call_filenames_cls.
-                              networkcontainers_filename(),
-                              str)
-
-    def test_eq_networkcontainers_filename(self):
-        self.assertEqual('networkcontainers.pkl',
-                         self.ipam_call_filenames_cls.
-                         networkcontainers_filename())
 
 
 class TestIpamCallTypes(unittest.TestCase):

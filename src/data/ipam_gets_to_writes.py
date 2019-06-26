@@ -16,12 +16,9 @@ permissions and limitations under the License.
 
 """
 
-from builder import DirectoryValues, LoggingValues
+from builder import DirectoryValues, DataFileNames, LoggingValues
 from builder import Writer, Reader
-from ipam_apirequest_calltypes_callfilenames import \
-    IpamCallTypes, \
-    IpamApiRequest, \
-    IpamCallFilenames
+from ipam_apirequest_calltypes import IpamCallTypes, IpamApiRequest
 import logging
 import time
 import threading
@@ -41,7 +38,7 @@ class _BaseIpamGetsToWrite:
         self.write_cls = Writer()
         self.reader_cls = Reader()
         self.call_types_cls = IpamCallTypes()
-        self.filenames_cls = IpamCallFilenames()
+        self.filenames_cls = DataFileNames()
         self.ext_call_setup_cls = IpamApiRequest()
         self._logger.info('Project Environment Variables Loaded.')
         self._network_data = []

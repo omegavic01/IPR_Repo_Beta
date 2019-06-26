@@ -3,7 +3,6 @@ from builder import DirectoryValues
 from builder import DataFileNames
 from builder import LoggingValues
 from builder import Reader
-from ipam_apirequest_calltypes_callfilenames import IpamCallFilenames
 import pandas as pd
 import pickle
 from collections import MutableMapping

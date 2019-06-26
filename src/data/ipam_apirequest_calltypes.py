@@ -20,8 +20,10 @@ import logging
 import json
 import time
 import requests
+# pylint: disable = E0401
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from builder import EnvironmentValues, LoggingValues
+# pylint: disable=E1101
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
@@ -80,6 +82,7 @@ class IpamApiRequest:
 
     @staticmethod
     def loads_as_json(_):
+        """Json loader."""
         return json.loads(_)
 
 
@@ -131,32 +134,3 @@ class IpamCallTypes:
                "utilization&" \
                "network_view=" + view + \
                "&_max_results=-5000"
-
-
-class IpamCallFilenames:
-    """Filenames defined for ipam pulls."""
-
-    @staticmethod
-    def extensible_attributes_filename():
-        """Returns filename for extensible attributes."""
-        return 'extensible_attributes.pkl'
-
-    @staticmethod
-    def extensible_attributes_list_values_filename():
-        """Returns filename for extensible attributes."""
-        return 'extensible_attributes_list_values.pkl'
-
-    @staticmethod
-    def network_views_filename():
-        """Returns filename for network views."""
-        return 'network_views.pkl'
-
-    @staticmethod
-    def networks_filename():
-        """Returns filename for networks filename."""
-        return 'networks.pkl'
-
-    @staticmethod
-    def networkcontainers_filename():
-        """Returns filename for networkcontainers filename."""
-        return 'networkcontainers.pkl'

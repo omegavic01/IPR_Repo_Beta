@@ -16,11 +16,12 @@ permissions and limitations under the License.
 
 """
 from collections import MutableMapping
+from collections import OrderedDict
 import pandas as pd
 import logging
 import time
-import json
 from ipaddr import IPv4Network
+from netaddr import IPNetwork
 from builder import Cgn
 from builder import DirectoryValues
 from builder import DataFileNames
@@ -210,43 +211,56 @@ class IpamDataInterim(_BaseIpamProcessing):
 
 class IpamDataProcessed(_BaseIpamProcessing):
 
-    def run_ipam_interim(self, interim_data, xlsx, pickle):
+    def run_ipam_processing(self, interim_data):
         """Method that runs through all of the interim processing steps.  Then
         writes the panda dataframe to excel and to a pickle file.
 
         """
         self._logger.info('Starting the final step in data processing.')
         start = time.perf_counter()
-        output_data = \
-            self.ea_ipr_designation_processing(
-                self.ea_datacenter_processing(
-                    self.panda_processing_of_flattened_data(
-                        self._flatten_data(
-                            interim_data))))
-
-        output_data.to_excel(self.dir_cls.processed_dir() + '\\' + xlsx)
-        output_data.to_pickle(self.dir_cls.processed_dir() + '\\' + pickle)
+        self.panda_processing_of_interim_data(interim_data)
         end = time.perf_counter()
         self._logger.info('Final processed the data in {} seconds'.
                           format(end - start))
         self._logger.info('Finished the final step in data processing.')
 
-    def panda_processing_of_interim_data(self, interim_data):
-        processing_data = interim_data[
-            ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
-             'extattrs_City_value',
-             'extattrs_Address_value', 'extattrs_Site_value',
-             'extattrs_Datacenter_value',
-             'extattrs_Division_value', 'extattrs_Requester Email_value',
-             'extattrs_Agency_value',
-             'extattrs_VLAN Description_value', 'comment',
-             'extattrs_Interface Name_value',
-             'net_type', 'network_view', 'extattrs_IPR Designation_value',
-             'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4',
-             '/Cidr']].copy()
-        processing_data.insert(loc=0, column='Disposition', value='')
-        writer = pd.ExcelWriter('multiple_sheets.xlsx', engine='xlsxwriter')
-        temp_df = processing_data.copy()
+    def _conflict_overlap_check(self, master_interim_df):
+        m_list_index = master_interim_df['Index'].to_list()
+        m_list_cidr = master_interim_df['IPv4 Subnet'].to_list()
+        m_list_cidr_set = list(OrderedDict.fromkeys(m_list_cidr))
+        m_cidr_index_zip = list(zip(m_list_cidr, m_list_index))
+        m_dict_overlap = {}
+        m_dict_conflict = {}
+        for i in m_list_cidr_set:
+            m_dict_overlap[i] = []
+            m_dict_conflict[i] = []
+        for item in m_cidr_index_zip:
+            if item[0] in m_dict_conflict:  # Conflict check
+                m_dict_conflict[item[0]].append(item[1])
+        for item in m_cidr_index_zip:
+            for _ip in m_list_cidr_set:
+                if int(_ip.split('.')[0]) < int(item[0].split('.')[0]):
+                    continue
+                if int(_ip.split('.')[1]) < int(item[0].split('.')[1]):
+                    continue
+                elif _ip == item[0]:
+                    continue
+                elif _ip.split('.')[0:2] == item[0].split('.')[0:2]:
+                    if IPNetwork(_ip) in IPNetwork(item[0]):
+                        m_dict_overlap[_ip].append(item[1])
+                        continue
+                elif int(item[0].split('.')[1]) < int(_ip.split('.')[1]):
+                    break
+                else:
+                    print(item)
+        return m_dict_overlap, m_dict_conflict
+
+    def master_and_uncategorized_sheet_processing(self, master_data):
+        """This method takes a copy of the full dataframe.  Processes it and
+        returns the mashed data for writing.
+
+        """
+        temp_df = master_data.copy()
         # Master IPR Designation Filtering
         temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'leaf']
         temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'dup']
@@ -283,29 +297,85 @@ class IpamDataProcessed(_BaseIpamProcessing):
         master_df = master_df.reset_index()
         del master_df['index']
         master_df['Index'] = master_df.index + 10001
+
+        # Performs Conflict and Overlap Check
+        master_overlaps, master_conflicts = self._conflict_overlap_check(master_df)
+        master_df['Conflict Subnet Overlap - Index No.'] = ''
+        master_df['Conflict Subnet - Index No.'] = ''
+        master_df['No Overlap'] = ''
+        master_df['No Conflict'] = ''
+        master_df['Conflict Subnet Overlap - Count'] = ''
+        master_df['Conflict Subnet - Count'] = ''
+        for row in master_df.index.values:
+            if master_overlaps[master_df.loc[row, 'IPv4 Subnet']]:
+                if len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']]) > 1:
+                    master_df.loc[row, 'Conflict Subnet Overlap - Index No.'] = ', '.join(str(e) for e in master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
+                    master_df.loc[row, 'Conflict Subnet Overlap - Count'] = len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
+                else:
+                    master_df.loc[row, 'Conflict Subnet Overlap - Index No.'] = master_overlaps[master_df.loc[row, 'IPv4 Subnet']][0]
+                    master_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
+                master_df.loc[row, 'No Overlap'] = 'NO'
+            else:
+                master_df.loc[row, 'No Overlap'] = 'YES'
+            if len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) > 2:
+                temp_list = master_conflicts[master_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                master_df.loc[row, 'Conflict Subnet - Index No.'] = ', '.join(str(e) for e in temp_list)
+                master_df.loc[row, 'No Conflict'] = 'NO'
+                master_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
+            elif len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) == 2:
+                temp_list = master_conflicts[master_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                master_df.loc[row, 'Conflict Subnet - Index No.'] = temp_list[0]
+                master_df.loc[row, 'No Conflict'] = 'NO'
+                master_df.loc[row, 'Conflict Subnet - Count'] = 1
+            else:
+                master_df.loc[row, 'No Conflict'] = 'YES'
+
+        return master_df, uncategorized_df
+
+    def panda_processing_of_interim_data(self, interim_data):
+        processing_data = interim_data[
+            ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
+             'extattrs_City_value',
+             'extattrs_Address_value', 'extattrs_Site_value',
+             'extattrs_Datacenter_value',
+             'extattrs_Division_value', 'extattrs_Requester Email_value',
+             'extattrs_Agency_value',
+             'extattrs_VLAN Description_value', 'comment',
+             'extattrs_Interface Name_value',
+             'net_type', 'network_view', 'extattrs_IPR Designation_value',
+             'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4',
+             '/Cidr']].copy()
+        processing_data.insert(loc=0, column='Disposition', value='')
+        writer = pd.ExcelWriter('multiple_sheets.xlsx', engine='xlsxwriter')
+
+        # Master and Uncategorized processing.
+        master_df, uncategorized_df = self.master_and_uncategorized_sheet_processing(processing_data)
         master_df.to_excel(writer, sheet_name='Master', index=False)
         # Full Dataset sheet
-        processing_data.to_excel(writer, sheet_name='Full-Dataset', index=False)
-        # Filt-Uncategorized sheet
-        uncategorized_df.to_excel(writer, sheet_name='Filt-Uncategorized', index=False)
+        processing_data.to_excel(writer, sheet_name='Full-Dataset', index=False, header=self.env_cls.header_row_list())
         # IPR Designation Filters Sheets
-        # processing_data[processing_data['extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(writer, sheet_name='Filt-Leaf', index=False)
         processing_data[processing_data['extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(writer, sheet_name='Filt-Leaf', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['dup'])].to_excel(writer, sheet_name='Filt-Dup', index=False)
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(writer, sheet_name='Filt-Ignore', index=False)
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['divest'])].to_excel(writer, sheet_name='Filt-Divest', index=False)
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(writer, sheet_name='Filt-Re-IP', index=False)
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(writer, sheet_name='Filt-Drop Reserve', index=False)
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['parent'])].to_excel(writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False)
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['dup'])].to_excel(writer, sheet_name='Filt-Dup', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(writer, sheet_name='Filt-Ignore', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['divest'])].to_excel(writer, sheet_name='Filt-Divest', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(writer, sheet_name='Filt-Re-IP', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(writer, sheet_name='Filt-Drop Reserve', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['parent'])].to_excel(writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False, header=self.env_cls.header_row_list())
         # IP Address Filters
-        processing_data[processing_data['/Cidr'].isin([32])].to_excel(writer, sheet_name='Filt-Cidr-32', index=False)
-        processing_data[processing_data['network'].isin(['100.88.0.0/29'])].to_excel(writer, sheet_name='Filt-100.88-Cidr-29', index=False)
-        processing_data[processing_data['network'].isin(['100.64.0.0/29'])].to_excel(writer, sheet_name='Filt-100.64-Cidr-29', index=False)
+        processing_data[processing_data['/Cidr'].isin([32])].to_excel(writer, sheet_name='Filt-Cidr-32', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['network'].isin(['100.88.0.0/29'])].to_excel(writer, sheet_name='Filt-100.88-Cidr-29', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data['network'].isin(['100.64.0.0/29'])].to_excel(writer, sheet_name='Filt-100.64-Cidr-29', index=False, header=self.env_cls.header_row_list())
         # Network View Filters
-        processing_data[processing_data['network_view'].isin(['Public-IP'])].to_excel(writer, sheet_name='Filt-Public-IP-View', index=False)
+        processing_data[processing_data['network_view'].isin(['Public-IP'])].to_excel(writer, sheet_name='Filt-Public-IP-View', index=False, header=self.env_cls.header_row_list())
+        # Uncategorized Sheet
+        uncategorized_df.to_excel(writer, sheet_name='Filt-Uncategorized', index=False, header=self.env_cls.header_row_list())
 
-        # Prepare Master Sheet
-
-
+        # Formatting Workbook
+        workbook = writer.book
+        worksheet = writer.sheets['Master']
+        left = workbook.add_format({'align': 'left'})
+        worksheet.set_column('W:Y', None, left)
         writer.save()
 

@@ -52,7 +52,7 @@ if run_ipam_data_process:
     ipam_processing = IpamDataProcessed()
     read = Reader()
     interim_dir = dir_cls.interim_dir()
-    ipam_processing.panda_processing_of_interim_data(
+    ipam_processing.run_ipam_processing(
         read.read_from_pkl(dir_cls.interim_dir(),
                            data_filenames_cls.ipam_dump_interim_panda()))
 

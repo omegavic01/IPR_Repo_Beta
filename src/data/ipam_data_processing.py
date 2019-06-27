@@ -222,7 +222,89 @@ class IpamDataProcessed(_BaseIpamProcessing):
                           format(end - start))
         self._logger.info('Finished the final step in data processing.')
 
-    def _conflict_overlap_check(self, master_interim_df):
+    @staticmethod
+    def _compiling_data(data):
+        vrf_idx_data_dict = {}
+        vrf_dict = {}
+        vrf_o_and_c_dict = {}
+        for i in data:
+            if i[15].startswith('00'):
+                vrf_idx_data_dict[i[22]] = i
+
+                def _get_vrf_o_c_dict(i, vrf_o_c_dict):
+                    if i[15].split('-')[0] not in vrf_o_c_dict:
+                        vrf_o_c_dict[i[15].split('-')[0]] = []
+                    if i[15].split('-')[0] in vrf_o_c_dict:
+                        if not i[23]:
+                            pass
+                        elif i[23] and isinstance(i[23], str):
+                            vrf_o_c_dict[i[15].split('-')[0]] += \
+                                list(map(int, i[23].split(',')))
+                        elif i[23] and isinstance(i[23], int):
+                            vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
+                        else:
+                            if i[23] and isinstance(i[23], str):
+                                vrf_o_c_dict[i[15].split('-')[0]] += \
+                                    list(map(int, i[23].split(',')))
+                            elif i[23] and isinstance(i[23], int):
+                                vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
+                        if not i[24]:
+                            pass
+                        elif i[24] and isinstance(i[24], str):
+                            vrf_o_c_dict[i[15].split('-')[0]] += \
+                                list(map(int, i[24].split(',')))
+                        elif i[24] and isinstance(i[24], int):
+                            vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
+                        else:
+                            if i[24] and isinstance(i[24], str):
+                                vrf_o_c_dict[i[15].split('-')[0]] += \
+                                    list(map(int, i[24].split(',')))
+                            elif i[24] and isinstance(i[24], int):
+                                vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
+                _get_vrf_o_c_dict(i, vrf_o_and_c_dict)
+                if i[15].split('-')[0] not in vrf_dict:
+                    vrf_dict[i[15].split('-')[0]] = [i]
+                else:
+                    vrf_dict[i[15].split('-')[0]].append(i)
+        return vrf_idx_data_dict, vrf_dict, vrf_o_and_c_dict
+
+    @staticmethod
+    def _check_vrf_record_uncontested_vrfs(vrf_o_c_dict, vrf_idx):
+        return_dict = dict()
+        clean_vrf_list = list()
+        for key in vrf_o_c_dict.keys():
+            temp_dict = dict()
+            temp_dict[key] = list()
+            for o_c in vrf_o_c_dict[key]:
+                if o_c in vrf_idx and key not in vrf_idx[o_c][15]:
+                    temp_dict[key].append(vrf_idx[o_c][15])
+            if temp_dict[key]:
+                temp_dict[key] = list(set(temp_dict[key]))
+                temp_dict[key] = ', '.join(temp_dict[key])
+                return_dict.update(temp_dict)
+            else:
+                clean_vrf_list.append(temp_dict[key])
+        return return_dict, clean_vrf_list
+
+    @staticmethod
+    def _check_vrf_against_entire_db(vrf_dict):
+        clean_vrf = []
+        for key in vrf_dict.keys():
+            temp_vrf = []
+            for i in vrf_dict[key]:
+                if 'NO' in i[25] or 'NO' in i[26]:
+                    temp_vrf.append('NO')
+                    break
+                else:
+                    temp_vrf.append(key)
+            if not temp_vrf or 'NO' in temp_vrf:
+                continue
+            else:
+                clean_vrf.append(list(set(temp_vrf)))
+        return clean_vrf
+
+    @staticmethod
+    def _conflict_overlap_check(master_interim_df):
         m_list_index = master_interim_df['Index'].to_list()
         m_list_cidr = master_interim_df['IPv4 Subnet'].to_list()
         m_list_cidr_set = list(OrderedDict.fromkeys(m_list_cidr))
@@ -440,7 +522,6 @@ class IpamDataProcessed(_BaseIpamProcessing):
             writer, sheet_name='Filt-Conflicting-VRF', index=True,
             header=["Conflicting VRF's"], index_label='VRF #')
 
-
         # Formatting Workbook
         workbook = writer.book
         worksheet = writer.sheets['Master']
@@ -448,83 +529,4 @@ class IpamDataProcessed(_BaseIpamProcessing):
         worksheet.set_column('W:Y', None, left)
         writer.save()
 
-    @staticmethod
-    def _compiling_data(data):
-        vrf_idx_data_dict = {}
-        vrf_dict = {}
-        vrf_o_and_c_dict = {}
-        for i in data:
-            if i[15].startswith('00'):
-                vrf_idx_data_dict[i[22]] = i
 
-                def _get_vrf_o_c_dict(i, vrf_o_c_dict):
-                    if i[15].split('-')[0] not in vrf_o_c_dict:
-                        vrf_o_c_dict[i[15].split('-')[0]] = []
-                    if i[15].split('-')[0] in vrf_o_c_dict:
-                        if not i[23]:
-                            pass
-                        elif i[23] and isinstance(i[23], str):
-                            vrf_o_c_dict[i[15].split('-')[0]] += \
-                                list(map(int, i[23].split(',')))
-                        elif i[23] and isinstance(i[23], int):
-                            vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
-                        else:
-                            if i[23] and isinstance(i[23], str):
-                                vrf_o_c_dict[i[15].split('-')[0]] += \
-                                    list(map(int, i[23].split(',')))
-                            elif i[23] and isinstance(i[23], int):
-                                vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
-                        if not i[24]:
-                            pass
-                        elif i[24] and isinstance(i[24], str):
-                            vrf_o_c_dict[i[15].split('-')[0]] += \
-                                list(map(int, i[24].split(',')))
-                        elif i[24] and isinstance(i[24], int):
-                            vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
-                        else:
-                            if i[24] and isinstance(i[24], str):
-                                vrf_o_c_dict[i[15].split('-')[0]] += \
-                                    list(map(int, i[24].split(',')))
-                            elif i[24] and isinstance(i[24], int):
-                                vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
-                _get_vrf_o_c_dict(i, vrf_o_and_c_dict)
-                if i[15].split('-')[0] not in vrf_dict:
-                    vrf_dict[i[15].split('-')[0]] = [i]
-                else:
-                    vrf_dict[i[15].split('-')[0]].append(i)
-        return vrf_idx_data_dict, vrf_dict, vrf_o_and_c_dict
-
-    @staticmethod
-    def _check_vrf_record_uncontested_vrfs(vrf_o_c_dict, vrf_idx):
-        return_dict = dict()
-        clean_vrf_list = list()
-        for key in vrf_o_c_dict.keys():
-            temp_dict = dict()
-            temp_dict[key] = list()
-            for o_c in vrf_o_c_dict[key]:
-                if o_c in vrf_idx and key not in vrf_idx[o_c][15]:
-                    temp_dict[key].append(vrf_idx[o_c][15])
-            if temp_dict[key]:
-                temp_dict[key] = list(set(temp_dict[key]))
-                temp_dict[key] = ', '.join(temp_dict[key])
-                return_dict.update(temp_dict)
-            else:
-                clean_vrf_list.append(temp_dict[key])
-        return return_dict, clean_vrf_list
-
-    @staticmethod
-    def _check_vrf_against_entire_db(vrf_dict):
-        clean_vrf = []
-        for key in vrf_dict.keys():
-            temp_vrf = []
-            for i in vrf_dict[key]:
-                if 'NO' in i[25] or 'NO' in i[26]:
-                    temp_vrf.append('NO')
-                    break
-                else:
-                    temp_vrf.append(key)
-            if not temp_vrf or 'NO' in temp_vrf:
-                continue
-            else:
-                clean_vrf.append(list(set(temp_vrf)))
-        return clean_vrf

@@ -1,6 +1,7 @@
 from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
 from ipam_data_processing import IpamDataInterim, IpamDataProcessed
+from ipam_reports import IpamReports
 from builder import DirectoryValues
 from builder import DataFileNames
 from builder import Reader
@@ -45,7 +46,7 @@ if run_ipam_data_processing:
         data_filenames_cls.ipam_dump_interim_dicted())
 
 
-run_ipam_data_process = True
+run_ipam_data_process = False
 if run_ipam_data_process:
     data_filenames_cls = DataFileNames()
     dir_cls = DirectoryValues()
@@ -56,6 +57,11 @@ if run_ipam_data_process:
         read.read_from_pkl(dir_cls.interim_dir(),
                            data_filenames_cls.ipam_dump_interim_panda()))
 
+
+run_ipam_reports = True
+if run_ipam_reports:
+    ipam_reports = IpamReports()
+    ipam_reports.generate_reports()
 
 """Good place to debug network data from a network view.
 """

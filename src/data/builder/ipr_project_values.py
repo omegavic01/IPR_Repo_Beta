@@ -200,28 +200,13 @@ class DataFileNames:
         """Returns filename for networkcontainers filename."""
         return 'networkcontainers.pkl'
 
+    @staticmethod
+    def processed_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'IPAM-to-IPR.xlsx'
 
-class ProjMiscValues:
-    pass
+    @staticmethod
+    def master_pkl_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'master_pkl.pkl'
 
-#    @staticmethod
-#    def ipam_sheet_list():
-#        sheets = ['MASTER',
-#                  'Full-Dataset',-
-#                  'Filt-Cidr-32',-
-#                  'Filt-100.88-Cidr-29',
-#                  'Filt-100.64-Cidr-29',
-#                  'Filt-Cidr-15-to-Cidr-1',
-#                  'Filt-Public-ip-View',-
-#                  'Filt-Wan_test-View',-
-#                  'Filt-OMC-IT-Parent-Subnet',-
-#                  'Filt-Leaf',-
-#                  'Filt-Dup',-
-#                  'Filt-Ignore',-
-#                  'Filt-Uncategorized',
-#                  'Filt-Divest',-
-#                  'Filt-Re-IP',-
-#                  'Filt-Drop Reserve']-
-#        sheets.sort()
-#        sheets.reverse()
-#        return sheets

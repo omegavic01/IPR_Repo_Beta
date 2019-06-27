@@ -27,7 +27,6 @@ from builder import DirectoryValues
 from builder import DataFileNames
 from builder import EnvironmentValues
 from builder import LoggingValues
-from builder import ProjMiscValues
 from builder import Reader
 from builder import Writer
 
@@ -44,7 +43,6 @@ class _BaseIpamProcessing:
         self.dir_cls = DirectoryValues()
         self.filename_cls = DataFileNames()
         self.env_cls = EnvironmentValues()
-        self.misc_values_cls = ProjMiscValues()
         self.reader_cls = Reader()
         self.writer_cls = Writer()
 
@@ -257,30 +255,30 @@ class IpamDataProcessed(_BaseIpamProcessing):
 
     def master_and_uncategorized_sheet_processing(self, master_data):
         """This method takes a copy of the full dataframe.  Processes it and
-        returns the mashed data for writing.
+        returns the mashed data for writing the Master Sheet and Uncategorized
+        Sheet.
 
         """
         temp_df = master_data.copy()
-        # Master IPR Designation Filtering
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'leaf']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'dup']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'ignore']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'divest']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 're-ip']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'drop reserve']
-        temp_df = temp_df[temp_df['extattrs_IPR Designation_value'] != 'parent']
-        # Master IP Address Filters
-        temp_df = temp_df[temp_df['/Cidr'] != 32]
-        temp_df = temp_df[temp_df['network'] != '100.88.0.0/29']
-        temp_df = temp_df[temp_df['network'] != '100.64.0.0/29']
-        # Network View Filters
-        temp_df = temp_df[temp_df['network_view'] != 'Public-IP']
+        # Filter out uneeded data.
+        temp_df = temp_df.loc[
+            (temp_df['extattrs_IPR Designation_value'] != 'leaf') &
+            (temp_df['extattrs_IPR Designation_value'] != 'dup') &
+            (temp_df['extattrs_IPR Designation_value'] != 'ignore') &
+            (temp_df['extattrs_IPR Designation_value'] != 'divest') &
+            (temp_df['extattrs_IPR Designation_value'] != 're-ip') &
+            (temp_df['extattrs_IPR Designation_value'] != 'drop reserve') &
+            (temp_df['extattrs_IPR Designation_value'] != 'parent') &
+            (temp_df['/Cidr'] != 32) &
+            (temp_df['network'] != '100.88.0.0/29') &
+            (temp_df['network'] != '100.64.0.0/29') &
+            (temp_df['network_view'] != 'Public-IP')]
 
-        # Take filtered dataframe and create uncatagorized and master.
-
+        # Convert to dict for data processing.
         temp_dict = temp_df.to_dict('index')
         temp_master_dict = {}
         temp_uncategorized_dict = {}
+        # Pull data out uncategorized data.
         for key in temp_dict.keys():
             if IPv4Network(temp_dict[key]['network']).is_private or \
                     Cgn.is_cgn(IPv4Network(temp_dict[key]['network'])):
@@ -289,7 +287,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 temp_uncategorized_dict.update({key: temp_dict[key]})
 
         master_df = pd.DataFrame.from_dict(temp_master_dict, orient='index')
-        uncategorized_df = pd.DataFrame.from_dict(temp_uncategorized_dict, orient='index')
+        uncategorized_df = pd.DataFrame.from_dict(
+            temp_uncategorized_dict, orient='index')
 
         # Rename column header
         header_dict = self.env_cls.header_row_dict()
@@ -299,7 +298,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
         master_df['Index'] = master_df.index + 10001
 
         # Performs Conflict and Overlap Check
-        master_overlaps, master_conflicts = self._conflict_overlap_check(master_df)
+        master_overlaps, master_conflicts = \
+            self._conflict_overlap_check(master_df)
         master_df['Conflict Subnet Overlap - Index No.'] = ''
         master_df['Conflict Subnet - Index No.'] = ''
         master_df['No Overlap'] = ''
@@ -309,24 +309,35 @@ class IpamDataProcessed(_BaseIpamProcessing):
         for row in master_df.index.values:
             if master_overlaps[master_df.loc[row, 'IPv4 Subnet']]:
                 if len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']]) > 1:
-                    master_df.loc[row, 'Conflict Subnet Overlap - Index No.'] = ', '.join(str(e) for e in master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
-                    master_df.loc[row, 'Conflict Subnet Overlap - Count'] = len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
+                    master_df.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        ', '.join(str(e) for e in master_overlaps[
+                            master_df.loc[row, 'IPv4 Subnet']])
+                    master_df.loc[
+                        row, 'Conflict Subnet Overlap - Count'] = \
+                        len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
                 else:
-                    master_df.loc[row, 'Conflict Subnet Overlap - Index No.'] = master_overlaps[master_df.loc[row, 'IPv4 Subnet']][0]
+                    master_df.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        master_overlaps[master_df.loc[row, 'IPv4 Subnet']][0]
                     master_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
                 master_df.loc[row, 'No Overlap'] = 'NO'
             else:
                 master_df.loc[row, 'No Overlap'] = 'YES'
             if len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) > 2:
-                temp_list = master_conflicts[master_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list = master_conflicts[
+                    master_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                master_df.loc[row, 'Conflict Subnet - Index No.'] = ', '.join(str(e) for e in temp_list)
+                master_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                    ', '.join(str(e) for e in temp_list)
                 master_df.loc[row, 'No Conflict'] = 'NO'
                 master_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
             elif len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) == 2:
-                temp_list = master_conflicts[master_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list = master_conflicts[
+                    master_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                master_df.loc[row, 'Conflict Subnet - Index No.'] = temp_list[0]
+                master_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                    temp_list[0]
                 master_df.loc[row, 'No Conflict'] = 'NO'
                 master_df.loc[row, 'Conflict Subnet - Count'] = 1
             else:
@@ -335,6 +346,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
         return master_df, uncategorized_df
 
     def panda_processing_of_interim_data(self, interim_data):
+        workbook_file = self.dir_cls.processed_dir() + '\\' + \
+                        self.filename_cls.processed_filename()
         processing_data = interim_data[
             ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
              'extattrs_City_value',
@@ -348,29 +361,85 @@ class IpamDataProcessed(_BaseIpamProcessing):
              'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4',
              '/Cidr']].copy()
         processing_data.insert(loc=0, column='Disposition', value='')
-        writer = pd.ExcelWriter('multiple_sheets.xlsx', engine='xlsxwriter')
+        writer = pd.ExcelWriter(workbook_file, engine='xlsxwriter')
 
         # Master and Uncategorized processing.
-        master_df, uncategorized_df = self.master_and_uncategorized_sheet_processing(processing_data)
+        master_df, uncategorized_df = \
+            self.master_and_uncategorized_sheet_processing(processing_data)
         master_df.to_excel(writer, sheet_name='Master', index=False)
+        master_df_to_list = master_df.values.tolist()
+        vrf_idx, vrf_dict, vrf_o_c_dict = \
+            self._compiling_data(master_df_to_list)
+        clear_vrf = self._check_vrf_against_entire_db(vrf_dict)
+        clear_vrf_df = pd.DataFrame(clear_vrf)
+
+        vrf_summaries, clean_vrfs = self._check_vrf_record_uncontested_vrfs(
+            vrf_o_c_dict, vrf_idx)
+        vrf_summaries_df = pd.DataFrame.from_dict(vrf_summaries,
+                                                  orient='index')
+
         # Full Dataset sheet
-        processing_data.to_excel(writer, sheet_name='Full-Dataset', index=False, header=self.env_cls.header_row_list())
+        processing_data.to_excel(writer, sheet_name='Full-Dataset',
+                                 index=False,
+                                 header=self.env_cls.header_row_list())
         # IPR Designation Filters Sheets
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(writer, sheet_name='Filt-Leaf', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['dup'])].to_excel(writer, sheet_name='Filt-Dup', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(writer, sheet_name='Filt-Ignore', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['divest'])].to_excel(writer, sheet_name='Filt-Divest', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(writer, sheet_name='Filt-Re-IP', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(writer, sheet_name='Filt-Drop Reserve', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['extattrs_IPR Designation_value'].isin(['parent'])].to_excel(writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(
+            writer, sheet_name='Filt-Leaf', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['dup'])].to_excel(
+            writer, sheet_name='Filt-Dup', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(
+            writer, sheet_name='Filt-Ignore', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['divest'])].to_excel(
+            writer, sheet_name='Filt-Divest', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(
+            writer, sheet_name='Filt-Re-IP', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(
+            writer, sheet_name='Filt-Drop Reserve', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'extattrs_IPR Designation_value'].isin(['parent'])].to_excel(
+            writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False,
+            header=self.env_cls.header_row_list())
         # IP Address Filters
-        processing_data[processing_data['/Cidr'].isin([32])].to_excel(writer, sheet_name='Filt-Cidr-32', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['network'].isin(['100.88.0.0/29'])].to_excel(writer, sheet_name='Filt-100.88-Cidr-29', index=False, header=self.env_cls.header_row_list())
-        processing_data[processing_data['network'].isin(['100.64.0.0/29'])].to_excel(writer, sheet_name='Filt-100.64-Cidr-29', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            '/Cidr'].isin([32])].to_excel(
+            writer, sheet_name='Filt-Cidr-32', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'network'].isin(['100.88.0.0/29'])].to_excel(
+            writer, sheet_name='Filt-100.88-Cidr-29', index=False,
+            header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'network'].isin(['100.64.0.0/29'])].to_excel(
+            writer, sheet_name='Filt-100.64-Cidr-29', index=False,
+            header=self.env_cls.header_row_list())
         # Network View Filters
-        processing_data[processing_data['network_view'].isin(['Public-IP'])].to_excel(writer, sheet_name='Filt-Public-IP-View', index=False, header=self.env_cls.header_row_list())
+        processing_data[processing_data[
+            'network_view'].isin(['Public-IP'])].to_excel(
+            writer, sheet_name='Filt-Public-IP-View', index=False,
+            header=self.env_cls.header_row_list())
         # Uncategorized Sheet
-        uncategorized_df.to_excel(writer, sheet_name='Filt-Uncategorized', index=False, header=self.env_cls.header_row_list())
+        uncategorized_df.to_excel(
+            writer, sheet_name='Filt-Uncategorized', index=False,
+            header=self.env_cls.header_row_list())
+        clear_vrf_df.to_excel(
+            writer, sheet_name='Clear-VRF', index=False,
+            header=["Clear VRF's"])
+        vrf_summaries_df.to_excel(
+            writer, sheet_name='Filt-Conflicting-VRF', index=True,
+            header=["Conflicting VRF's"], index_label='VRF #')
+
 
         # Formatting Workbook
         workbook = writer.book
@@ -379,3 +448,83 @@ class IpamDataProcessed(_BaseIpamProcessing):
         worksheet.set_column('W:Y', None, left)
         writer.save()
 
+    @staticmethod
+    def _compiling_data(data):
+        vrf_idx_data_dict = {}
+        vrf_dict = {}
+        vrf_o_and_c_dict = {}
+        for i in data:
+            if i[15].startswith('00'):
+                vrf_idx_data_dict[i[22]] = i
+
+                def _get_vrf_o_c_dict(i, vrf_o_c_dict):
+                    if i[15].split('-')[0] not in vrf_o_c_dict:
+                        vrf_o_c_dict[i[15].split('-')[0]] = []
+                    if i[15].split('-')[0] in vrf_o_c_dict:
+                        if not i[23]:
+                            pass
+                        elif i[23] and isinstance(i[23], str):
+                            vrf_o_c_dict[i[15].split('-')[0]] += \
+                                list(map(int, i[23].split(',')))
+                        elif i[23] and isinstance(i[23], int):
+                            vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
+                        else:
+                            if i[23] and isinstance(i[23], str):
+                                vrf_o_c_dict[i[15].split('-')[0]] += \
+                                    list(map(int, i[23].split(',')))
+                            elif i[23] and isinstance(i[23], int):
+                                vrf_o_c_dict[i[15].split('-')[0]].append(i[23])
+                        if not i[24]:
+                            pass
+                        elif i[24] and isinstance(i[24], str):
+                            vrf_o_c_dict[i[15].split('-')[0]] += \
+                                list(map(int, i[24].split(',')))
+                        elif i[24] and isinstance(i[24], int):
+                            vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
+                        else:
+                            if i[24] and isinstance(i[24], str):
+                                vrf_o_c_dict[i[15].split('-')[0]] += \
+                                    list(map(int, i[24].split(',')))
+                            elif i[24] and isinstance(i[24], int):
+                                vrf_o_c_dict[i[15].split('-')[0]].append(i[24])
+                _get_vrf_o_c_dict(i, vrf_o_and_c_dict)
+                if i[15].split('-')[0] not in vrf_dict:
+                    vrf_dict[i[15].split('-')[0]] = [i]
+                else:
+                    vrf_dict[i[15].split('-')[0]].append(i)
+        return vrf_idx_data_dict, vrf_dict, vrf_o_and_c_dict
+
+    @staticmethod
+    def _check_vrf_record_uncontested_vrfs(vrf_o_c_dict, vrf_idx):
+        return_dict = dict()
+        clean_vrf_list = list()
+        for key in vrf_o_c_dict.keys():
+            temp_dict = dict()
+            temp_dict[key] = list()
+            for o_c in vrf_o_c_dict[key]:
+                if o_c in vrf_idx and key not in vrf_idx[o_c][15]:
+                    temp_dict[key].append(vrf_idx[o_c][15])
+            if temp_dict[key]:
+                temp_dict[key] = list(set(temp_dict[key]))
+                temp_dict[key] = ', '.join(temp_dict[key])
+                return_dict.update(temp_dict)
+            else:
+                clean_vrf_list.append(temp_dict[key])
+        return return_dict, clean_vrf_list
+
+    @staticmethod
+    def _check_vrf_against_entire_db(vrf_dict):
+        clean_vrf = []
+        for key in vrf_dict.keys():
+            temp_vrf = []
+            for i in vrf_dict[key]:
+                if 'NO' in i[25] or 'NO' in i[26]:
+                    temp_vrf.append('NO')
+                    break
+                else:
+                    temp_vrf.append(key)
+            if not temp_vrf or 'NO' in temp_vrf:
+                continue
+            else:
+                clean_vrf.append(list(set(temp_vrf)))
+        return clean_vrf

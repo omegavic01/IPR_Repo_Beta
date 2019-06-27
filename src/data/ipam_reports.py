@@ -15,23 +15,21 @@ implied. See the License for the specific language governing
 permissions and limitations under the License.
 
 """
-from collections import MutableMapping
-from collections import OrderedDict
-import pandas as pd
-import logging
 import time
 import shutil, os
-import xlsxwriter
 from datetime import datetime
 from builder import DirectoryValues
 from builder import DataFileNames
-from builder import EnvironmentValues
-from builder import LoggingValues
-from builder import Reader
-from builder import Writer
 
 
 class IpamReports:
+
+    def __init__(self):
+        self.data_filename_cls = DataFileNames()
+        self.dir_cls = DirectoryValues()
+        self.process_dir = self.dir_cls.processed_dir()
+        self.reports_dir = self.dir_cls.reports_dir()
+        self.ipam_filename = self.data_filename_cls.processed_filename()
 
     @staticmethod
     def _get_file_date(file):
@@ -51,17 +49,12 @@ class IpamReports:
         shutil.copy(processed_file, report_file)
 
     def generate_reports(self):
-        # Build needed classe data
-        data_filename_cls = DataFileNames()
-        dir_cls = DirectoryValues()
-        process_dir = dir_cls.processed_dir()
-        reports_dir = dir_cls.reports_dir()
-        ipam_filename = data_filename_cls.processed_filename()
-        ipam_to_ipr_xlsx = process_dir + '\\' + ipam_filename
+        ipam_to_ipr_xlsx = self.process_dir + '\\' + self.ipam_filename
         date = self._get_file_date(ipam_to_ipr_xlsx)
         reports_ipam_filename = \
-            self._get_new_file_name_with_date_added(date, ipam_filename)
-        reports_ipam_to_ipr_xlsx = reports_dir + '\\' + reports_ipam_filename
+            self._get_new_file_name_with_date_added(date, self.ipam_filename)
+        reports_ipam_to_ipr_xlsx = \
+            self.reports_dir + '\\' + reports_ipam_filename
         self._create_ipam_report(ipam_to_ipr_xlsx, reports_ipam_to_ipr_xlsx)
 
 

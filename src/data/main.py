@@ -34,8 +34,8 @@ gather_current_ipam_data was run.  Then compiles the networks and
 networkcontainers into a .xlsx and .pickle file in the interim dir.
 This data is expected to be processed by other scripts
 """
-run_ipam_data_processing = False
-if run_ipam_data_processing:
+run_ipam_data_processing_interim = False
+if run_ipam_data_processing_interim:
     data_filenames_cls = DataFileNames()
     ipam_interim = IpamDataInterim()
     raw_data = ipam_interim.get_raw_data_networks_networkcontainers()
@@ -46,8 +46,8 @@ if run_ipam_data_processing:
         data_filenames_cls.ipam_dump_interim_dicted())
 
 
-run_ipam_data_process = False
-if run_ipam_data_process:
+run_ipam_data_processing_processed = False
+if run_ipam_data_processing_processed:
     data_filenames_cls = DataFileNames()
     dir_cls = DirectoryValues()
     ipam_processing = IpamDataProcessed()
@@ -61,7 +61,8 @@ if run_ipam_data_process:
 run_ipam_reports = True
 if run_ipam_reports:
     ipam_reports = IpamReports()
-    ipam_reports.generate_reports()
+    ipam_reports.generate_ipam_to_ipr_report()
+    ipam_reports.generate_percent_report()
 
 """Good place to debug network data from a network view.
 """
@@ -72,6 +73,5 @@ if gather_network_data_for_a_network_view:
     ipam_call_type_cls = IpamCallTypes()
     data_returned = ipam_api_request_cls.ipam_api_request(
         ipam_call_type_cls.networks('00324-CDS'))
-
 
 

@@ -202,11 +202,16 @@ class DataFileNames:
 
     @staticmethod
     def processed_filename():
-        """Returns filename for networkcontainers filename."""
+        """Returns filename for IPAM-to-IPR Spreadsheet filename."""
         return 'IPAM-to-IPR.xlsx'
 
     @staticmethod
     def master_pkl_filename():
-        """Returns filename for networkcontainers filename."""
+        """Returns filename for Master pickle filename."""
         return 'master_pkl.pkl'
+
+    @staticmethod
+    def percent_blank_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'MASTER - Report by percent-BLANK.xlsx'
 

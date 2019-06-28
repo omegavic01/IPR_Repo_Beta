@@ -16,15 +16,16 @@ permissions and limitations under the License.
 
 """
 
-from builder import DirectoryValues, DataFileNames, LoggingValues
-from builder import Writer, Reader
-from ipam_apirequest_calltypes import IpamCallTypes, IpamApiRequest
 import logging
 import time
 import threading
+from builder import DirectoryValues, DataFileNames, LoggingValues
+from builder import Writer, Reader
+from ipam_apirequest_calltypes import IpamCallTypes, IpamApiRequest
 
 
 class _BaseIpamGetsToWrite:
+    """Base class for ipam_gets_to_writes."""
 
     def __init__(self):
         self._log_cls = LoggingValues()
@@ -48,8 +49,10 @@ class _BaseIpamGetsToWrite:
 
 
 class IpamGetsToWrite(_BaseIpamGetsToWrite):
+    """Class contianing methods for making DDI call's."""
 
     def get_extensible_attributes(self):
+        """Requests the extensible attributes defined within DDI."""
         self._logger.info('Pulling current Extensible Attribute data.')
 
         _ext_attr_data = self.ext_call_setup_cls.loads_as_json(
@@ -63,6 +66,9 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         self._logger.info('Ext Attr data written to .pkl file in Raw Dir.')
 
     def get_extensible_attributes_list_values(self):
+        """Requests the extensible attributes listed values defined within DDI.
+
+        """
         self._logger.info('Pulling current Extensible Attribute data.')
         _ext_attr_list_data = self.ext_call_setup_cls.loads_as_json(
             self.ext_call_setup_cls.ipam_api_request(
@@ -75,6 +81,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         self._logger.info('Ext Att list data written to .pkl file in Raw Dir.')
 
     def get_network_views(self):
+        """Requests a the network_view data from DDI."""
         self._logger.info('Pulling current Network View Data.')
         _network_view_data = self.ext_call_setup_cls.loads_as_json(
             self.ext_call_setup_cls.ipam_api_request(
@@ -87,6 +94,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         self._logger.info('Network View data written to .pkl file in raw Dir.')
 
     def _get_ipam_networks(self, call):
+        """Multi Threading portion of the requests."""
         self.dl_sem.acquire()
         try:
             networks = self.ext_call_setup_cls.loads_as_json(
@@ -97,6 +105,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
             self.dl_sem.release()
 
     def get_networks(self):
+        """Requests the networks defined within DDI by view."""
         self._logger.info('Pulling IPAM Networks.')
         network_views = self.return_network_views()
         start = time.perf_counter()
@@ -114,8 +123,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
             t.join()
         end = time.perf_counter()
 
-        self._logger.info("Downloaded {} Networks in {} seconds".
-                          format(len(self._network_data), end - start))
+        self._logger.info("Downloaded %s Networks in %2f seconds",
+                          len(self._network_data), end - start)
 
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
@@ -125,6 +134,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         self._logger.info('IPAM data written to .pkl file in raw Dir.')
 
     def get_networkcontainers(self):
+        """Requests the networkcontainers defined within DDI by view."""
         self._logger.info('Pulling IPAM Networkcontainers.')
         network_views = self.return_network_views()
         start = time.perf_counter()
@@ -142,8 +152,8 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
             t.join()
         end = time.perf_counter()
 
-        self._logger.info("Downloaded {} Networks in {} seconds".
-                          format(len(self._network_data), end - start))
+        self._logger.info("Downloaded %s Networks in %2f seconds",
+                          len(self._network_data), end - start)
 
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
@@ -153,6 +163,7 @@ class IpamGetsToWrite(_BaseIpamGetsToWrite):
         self._logger.info('IPAM data written to .pkl file in raw Dir.')
 
     def return_network_views(self):
+        """Reads in the network views."""
         return self.reader_cls.read_from_pkl(self.dir_cls.raw_dir(),
                                              self.filenames_cls.
                                              network_views_filename())

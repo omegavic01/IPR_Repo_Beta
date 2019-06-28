@@ -15,16 +15,18 @@ implied. See the License for the specific language governing
 permissions and limitations under the License.
 
 """
+from datetime import datetime
 import time
-import shutil, os
+import shutil
+import os
 import openpyxl
 from openpyxl.styles import Alignment
-from datetime import datetime
 from builder import DirectoryValues
 from builder import DataFileNames
 
 
 class IpamReports:
+    """Takes the processed files and build the reports for IPR."""
 
     def __init__(self):
         self.data_filename_cls = DataFileNames()
@@ -34,10 +36,7 @@ class IpamReports:
         self.ipam_filename = self.data_filename_cls.processed_filename()
         self.ipam_to_ipr_xlsx = self.process_dir + '\\' + self.ipam_filename
         self.date = self._get_file_date(self.ipam_to_ipr_xlsx)
-        self.percent_blank_filename = \
-            self.data_filename_cls.percent_blank_filename()
-        self.percent_blank_xlsx = self.process_dir + '\\' + \
-            self.percent_blank_filename
+
 
     @staticmethod
     def _get_file_date(file):
@@ -85,6 +84,7 @@ class IpamReports:
         shutil.copy(processed_file, report_file)
 
     def generate_ipam_to_ipr_report(self):
+        """Generates IPAM-to-IPR-(date).xlsx report for IPR."""
         ipam_report_with_date_filename = \
             self._create_new_ipam_file_name_with_date_added(
                 self.date, self.ipam_filename)
@@ -94,12 +94,16 @@ class IpamReports:
                                  reports_ipam_to_ipr_xlsx)
 
     def generate_percent_report(self):
+        """Generates IPR_Percent report xlsx file for IPR."""
+        percent_blank_filename = \
+            self.data_filename_cls.percent_blank_filename()
+        percent_blank_xlsx = self.process_dir + '\\' + \
+            percent_blank_filename
         percent_report_with_date_filename = \
             self._create_new_percent_file_name_with_date_added(
-                self.date, self.percent_blank_filename)
+                self.date, percent_blank_filename)
         percent_report_with_date_filename_and_path = \
             self.reports_dir + '\\' + percent_report_with_date_filename
         self._copy_data_over(self.ipam_to_ipr_xlsx,
-                             self.percent_blank_xlsx,
+                             percent_blank_xlsx,
                              percent_report_with_date_filename_and_path)
-

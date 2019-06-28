@@ -15,13 +15,13 @@ implied. See the License for the specific language governing
 permissions and limitations under the License.
 
 """
+import time
 from collections import MutableMapping
 from collections import OrderedDict
-import pandas as pd
 import logging
-import time
 from ipaddr import IPv4Network
 from netaddr import IPNetwork
+import pandas as pd
 from builder import Cgn
 from builder import DirectoryValues
 from builder import DataFileNames
@@ -125,8 +125,9 @@ class IpamDataInterim(_BaseIpamProcessing):
             output_data.to_dict())
 
         end = time.perf_counter()
-        self._logger.info('Interim processed the data in {} seconds'.
-                          format(end - start))
+        time_taken = end - start
+        self._logger.info('Interim processed the data in %2f seconds',
+                          time_taken)
         self._logger.info('Finished the interim processing step.')
 
     def get_raw_data_networks_networkcontainers(self):
@@ -208,6 +209,7 @@ class IpamDataInterim(_BaseIpamProcessing):
 
 
 class IpamDataProcessed(_BaseIpamProcessing):
+    """Processing phase of the IPAM data."""
 
     def run_ipam_processing(self, interim_data):
         """Method that runs through all of the interim processing steps.  Then
@@ -218,9 +220,18 @@ class IpamDataProcessed(_BaseIpamProcessing):
         start = time.perf_counter()
         self.panda_processing_of_interim_data(interim_data)
         end = time.perf_counter()
-        self._logger.info('Final processed the data in {} seconds'.
-                          format(end - start))
+        time_taken = end - start
+        self._logger.info('Final processed the data in %2f seconds',
+                          time_taken)
         self._logger.info('Finished the final step in data processing.')
+
+    @staticmethod
+    def _tweak_and_save_workbook(write):
+        workbook = write.book
+        worksheet = write.sheets['Master']
+        left = workbook.add_format({'align': 'left'})
+        worksheet.set_column('W:Y', None, left)
+        write.save()
 
     @staticmethod
     def _compiling_data(data):
@@ -351,6 +362,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
             (temp_df['extattrs_IPR Designation_value'] != 're-ip') &
             (temp_df['extattrs_IPR Designation_value'] != 'drop reserve') &
             (temp_df['extattrs_IPR Designation_value'] != 'parent') &
+            (temp_df['extattrs_IPR Designation_value'] != 'decom') &
             (temp_df['/Cidr'] != 32) &
             (temp_df['network'] != '100.88.0.0/29') &
             (temp_df['network'] != '100.64.0.0/29') &
@@ -428,6 +440,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
         return master_df, uncategorized_df
 
     def panda_processing_of_interim_data(self, interim_data):
+        """Main Processing method."""
         workbook_file = self.dir_cls.processed_dir() + '\\' + \
                         self.filename_cls.processed_filename()
         processing_data = interim_data[
@@ -449,16 +462,14 @@ class IpamDataProcessed(_BaseIpamProcessing):
         master_df, uncategorized_df = \
             self.master_and_uncategorized_sheet_processing(processing_data)
         master_df.to_excel(writer, sheet_name='Master', index=False)
-        master_df_to_list = master_df.values.tolist()
         vrf_idx, vrf_dict, vrf_o_c_dict = \
-            self._compiling_data(master_df_to_list)
-        clear_vrf = self._check_vrf_against_entire_db(vrf_dict)
-        clear_vrf_df = pd.DataFrame(clear_vrf)
+            self._compiling_data(master_df.values.tolist())
+        clear_vrf_df = pd.DataFrame(
+            self._check_vrf_against_entire_db(vrf_dict))
 
-        vrf_summaries, clean_vrfs = self._check_vrf_record_uncontested_vrfs(
-            vrf_o_c_dict, vrf_idx)
-        vrf_summaries_df = pd.DataFrame.from_dict(vrf_summaries,
-                                                  orient='index')
+        vrf_summaries_df = pd.DataFrame.from_dict(
+            self._check_vrf_record_uncontested_vrfs(
+                vrf_o_c_dict, vrf_idx)[0], orient='index')
 
         # Full Dataset sheet
         processing_data.to_excel(writer, sheet_name='Full-Dataset',
@@ -467,50 +478,50 @@ class IpamDataProcessed(_BaseIpamProcessing):
         # IPR Designation Filters Sheets
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(
-            writer, sheet_name='Filt-Leaf', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Leaf', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['dup'])].to_excel(
-            writer, sheet_name='Filt-Dup', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Dup', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(
-            writer, sheet_name='Filt-Ignore', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Ignore', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['divest'])].to_excel(
-            writer, sheet_name='Filt-Divest', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Divest', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(
-            writer, sheet_name='Filt-Re-IP', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Re-IP', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(
-            writer, sheet_name='Filt-Drop Reserve', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Drop Reserve', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'extattrs_IPR Designation_value'].isin(['parent'])].to_excel(
-            writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False,
+                header=self.env_cls.header_row_list())
         # IP Address Filters
         processing_data[processing_data[
             '/Cidr'].isin([32])].to_excel(
-            writer, sheet_name='Filt-Cidr-32', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Cidr-32', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'network'].isin(['100.88.0.0/29'])].to_excel(
-            writer, sheet_name='Filt-100.88-Cidr-29', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-100.88-Cidr-29', index=False,
+                header=self.env_cls.header_row_list())
         processing_data[processing_data[
             'network'].isin(['100.64.0.0/29'])].to_excel(
-            writer, sheet_name='Filt-100.64-Cidr-29', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-100.64-Cidr-29', index=False,
+                header=self.env_cls.header_row_list())
         # Network View Filters
         processing_data[processing_data[
             'network_view'].isin(['Public-IP'])].to_excel(
-            writer, sheet_name='Filt-Public-IP-View', index=False,
-            header=self.env_cls.header_row_list())
+                writer, sheet_name='Filt-Public-IP-View', index=False,
+                header=self.env_cls.header_row_list())
         # Uncategorized Sheet
         uncategorized_df.to_excel(
             writer, sheet_name='Filt-Uncategorized', index=False,
@@ -522,11 +533,4 @@ class IpamDataProcessed(_BaseIpamProcessing):
             writer, sheet_name='Filt-Conflicting-VRF', index=True,
             header=["Conflicting VRF's"], index_label='VRF #')
 
-        # Formatting Workbook
-        workbook = writer.book
-        worksheet = writer.sheets['Master']
-        left = workbook.add_format({'align': 'left'})
-        worksheet.set_column('W:Y', None, left)
-        writer.save()
-
-
+        self._tweak_and_save_workbook(writer)

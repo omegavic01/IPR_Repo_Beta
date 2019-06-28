@@ -18,6 +18,7 @@ permissions and limitations under the License.
 import time
 import shutil, os
 import openpyxl
+from openpyxl.styles import Alignment
 from datetime import datetime
 from builder import DirectoryValues
 from builder import DataFileNames
@@ -43,7 +44,7 @@ class IpamReports:
         """Returns creation date of file."""
         date_str = time.ctime(os.path.getmtime(file))
         datetime_object = datetime.strptime(date_str, '%a %b %d %H:%M:%S %Y')
-        return datetime_object.strftime('%Y-%m-%d')
+        return datetime_object.strftime('%Y%m%d')
 
     @staticmethod
     def _copy_data_over(source, template, final):
@@ -60,6 +61,11 @@ class IpamReports:
         for row in source_ws:
             for cell in row:
                 template_ws[cell.coordinate].value = cell.value
+        max_row = template_ws.max_row
+        for row in template_ws.iter_rows(min_row=2, max_row=max_row,
+                                         min_col=24, max_col=25):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='left')
         template_wb.save(final)
 
     @staticmethod

@@ -17,9 +17,9 @@ permissions and limitations under the License.
 """
 
 import os
+import json
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
-import json
 
 
 class EnvironmentValues:
@@ -214,4 +214,3 @@ class DataFileNames:
     def percent_blank_filename():
         """Returns filename for networkcontainers filename."""
         return 'MASTER - Report by percent-BLANK.xlsx'
-

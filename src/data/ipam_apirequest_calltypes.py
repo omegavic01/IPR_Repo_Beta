@@ -17,18 +17,21 @@ permissions and limitations under the License.
 """
 
 import logging
-import json
 import time
 import requests
 # pylint: disable = E0401
+# Ignoring urllib3 pylint warning.
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from builder import EnvironmentValues, LoggingValues
 # pylint: disable=E1101
+# Ignoring urllib3 pylint warning.
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class IpamApiRequest:
     """IPAM API Call Definition."""
+    # pylint: disable = R0903
+    # This class is just meant to house the api construct.
 
     def __init__(self):
         self._env_cls = EnvironmentValues()
@@ -79,11 +82,6 @@ class IpamApiRequest:
                         nerrt)
                     return []
         return net_call
-
-    @staticmethod
-    def loads_as_json(_):
-        """Json loader."""
-        return json.loads(_)
 
 
 class IpamCallTypes:

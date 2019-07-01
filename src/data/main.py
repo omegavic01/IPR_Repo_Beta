@@ -46,7 +46,7 @@ if run_ipam_data_processing_interim:
         data_filenames_cls.ipam_dump_interim_dicted())
 
 
-run_ipam_data_processing_processed = False
+run_ipam_data_processing_processed = True
 if run_ipam_data_processing_processed:
     data_filenames_cls = DataFileNames()
     dir_cls = DirectoryValues()
@@ -58,7 +58,7 @@ if run_ipam_data_processing_processed:
                            data_filenames_cls.ipam_dump_interim_panda()))
 
 
-run_ipam_reports = False
+run_ipam_reports = True
 if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()

@@ -462,75 +462,112 @@ class IpamDataProcessed(_BaseIpamProcessing):
         master_df, uncategorized_df = \
             self.master_and_uncategorized_sheet_processing(processing_data)
         master_df.to_excel(writer, sheet_name='Master', index=False)
-        vrf_idx, vrf_dict, vrf_o_c_dict = \
-            self._compiling_data(master_df.values.tolist())
-        clear_vrf_df = pd.DataFrame(
-            self._check_vrf_against_entire_db(vrf_dict))
 
-        vrf_summaries_df = pd.DataFrame.from_dict(
-            self._check_vrf_record_uncontested_vrfs(
-                vrf_o_c_dict, vrf_idx)[0], orient='index')
 
         # Full Dataset sheet
         processing_data.to_excel(writer, sheet_name='Full-Dataset',
                                  index=False,
                                  header=self.env_cls.header_row_list())
+
+        processing_data_worksheets = [
+            ['leaf', 'extattrs_IPR Designation_value', 'Filt-Leaf', False],
+            ['dup', 'extattrs_IPR Designation_value', 'Filt-Dup', False],
+            ['ignore', 'extattrs_IPR Designation_value', 'Filt-Ignore', False],
+            ['divest', 'extattrs_IPR Designation_value', 'Filt-Divest', False],
+            ['re-ip', 'extattrs_IPR Designation_value', 'Filt-Re-IP', False],
+            ['drop reserve', 'extattrs_IPR Designation_value',
+             'Filt-Drop Reserve', False],
+            ['parent', 'extattrs_IPR Designation_value',
+             'Filt-OMC-IT-Parent Subnet', False],
+            [32, '/Cidr', 'Filt-Cidr-32', False],
+            ['100.88.0.0/29', 'network', 'Filt-100.88-Cidr-29', False],
+            ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
+            ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
+            ['Public-IP', 'network_view', 'Filt-Public-IP-View', False]
+            ]
+
         # IPR Designation Filters Sheets
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(
-                writer, sheet_name='Filt-Leaf', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['dup'])].to_excel(
-                writer, sheet_name='Filt-Dup', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(
-                writer, sheet_name='Filt-Ignore', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['divest'])].to_excel(
-                writer, sheet_name='Filt-Divest', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(
-                writer, sheet_name='Filt-Re-IP', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(
-                writer, sheet_name='Filt-Drop Reserve', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'extattrs_IPR Designation_value'].isin(['parent'])].to_excel(
-                writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False,
-                header=self.env_cls.header_row_list())
-        # IP Address Filters
-        processing_data[processing_data[
-            '/Cidr'].isin([32])].to_excel(
-                writer, sheet_name='Filt-Cidr-32', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'network'].isin(['100.88.0.0/29'])].to_excel(
-                writer, sheet_name='Filt-100.88-Cidr-29', index=False,
-                header=self.env_cls.header_row_list())
-        processing_data[processing_data[
-            'network'].isin(['100.64.0.0/29'])].to_excel(
-                writer, sheet_name='Filt-100.64-Cidr-29', index=False,
-                header=self.env_cls.header_row_list())
-        # Network View Filters
-        processing_data[processing_data[
-            'network_view'].isin(['Public-IP'])].to_excel(
-                writer, sheet_name='Filt-Public-IP-View', index=False,
-                header=self.env_cls.header_row_list())
+        for processing in processing_data_worksheets:
+            processing_data[processing_data[
+                processing[1]].isin([processing[0]])].to_excel(
+                    writer, sheet_name=processing[2], index=processing[3],
+                    header=self.env_cls.header_row_list())
+
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['leaf'])].to_excel(
+#                writer, sheet_name='Filt-Leaf', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['dup'])].to_excel(
+#                writer, sheet_name='Filt-Dup', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['ignore'])].to_excel(
+#                writer, sheet_name='Filt-Ignore', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['divest'])].to_excel(
+#                writer, sheet_name='Filt-Divest', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['re-ip'])].to_excel(
+#                writer, sheet_name='Filt-Re-IP', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['drop reserve'])].to_excel(
+#                writer, sheet_name='Filt-Drop Reserve', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'extattrs_IPR Designation_value'].isin(['parent'])].to_excel(
+#                writer, sheet_name='Filt-OMC-IT-Parent Subnet', index=False,
+#                header=self.env_cls.header_row_list())
+#        # IP Address Filters
+#        processing_data[processing_data[
+#            '/Cidr'].isin([32])].to_excel(
+#                writer, sheet_name='Filt-Cidr-32', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'network'].isin(['100.88.0.0/29'])].to_excel(
+#                writer, sheet_name='Filt-100.88-Cidr-29', index=False,
+#                header=self.env_cls.header_row_list())
+#        processing_data[processing_data[
+#            'network'].isin(['100.64.0.0/29'])].to_excel(
+#                writer, sheet_name='Filt-100.64-Cidr-29', index=False,
+#                header=self.env_cls.header_row_list())
+#        # Network View Filters
+#        processing_data[processing_data[
+#            'network_view'].isin(['Public-IP'])].to_excel(
+#                writer, sheet_name='Filt-Public-IP-View', index=False,
+#                header=self.env_cls.header_row_list())
         # Uncategorized Sheet
         uncategorized_df.to_excel(
             writer, sheet_name='Filt-Uncategorized', index=False,
             header=self.env_cls.header_row_list())
-        clear_vrf_df.to_excel(
-            writer, sheet_name='Clear-VRF', index=False,
-            header=["Clear VRF's"])
-        vrf_summaries_df.to_excel(
-            writer, sheet_name='Filt-Conflicting-VRF', index=True,
-            header=["Conflicting VRF's"], index_label='VRF #')
+
+        # Build dataset for _clear_vrf and _vrf_summaries_processing
+        vrf_idx, vrf_dict, vrf_o_c_dict = \
+            self._compiling_data(master_df.values.tolist())
+
+        def _clear_vrf(vrf_dictionary):
+            """Builds and writes the "Clear VRF's" worksheet."""
+            clear_vrf_df = pd.DataFrame(
+                self._check_vrf_against_entire_db(vrf_dictionary))
+
+            clear_vrf_df.to_excel(
+                writer, sheet_name='Clear-VRF', index=False,
+                header=["Clear VRF's"])
+
+        def _vrf_summaries_processing(vrf_index, vrf_o_c_dictionary):
+            """Builds and writes the "Conflicting VRF's" worksheet."""
+            vrf_summaries_df = pd.DataFrame.from_dict(
+                self._check_vrf_record_uncontested_vrfs(
+                    vrf_o_c_dictionary, vrf_index)[0], orient='index')
+
+            vrf_summaries_df.to_excel(
+                writer, sheet_name='Filt-Conflicting-VRF', index=True,
+                header=["Conflicting VRF's"], index_label='VRF #')
+
+        _clear_vrf(vrf_dict)
+        _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
 
         self._tweak_and_save_workbook(writer)

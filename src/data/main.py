@@ -34,7 +34,7 @@ gather_current_ipam_data was run.  Then compiles the networks and
 networkcontainers into a .xlsx and .pickle file in the interim dir.
 This data is expected to be processed by other scripts
 """
-run_ipam_data_processing_interim = False
+run_ipam_data_processing_interim = True
 if run_ipam_data_processing_interim:
     data_filenames_cls = DataFileNames()
     ipam_interim = IpamDataInterim()

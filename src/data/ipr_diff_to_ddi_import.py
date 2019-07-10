@@ -11,6 +11,9 @@ import logging
 from xlrd import open_workbook
 import requests
 from dotenv import find_dotenv, load_dotenv
+from builder import DataFileNames, DirectoryValues
+from builder import Writer
+from agency_vrf_view_libs import ReadLibraries
 
 
 def cidr_to_netmask(cidr):
@@ -809,15 +812,17 @@ def get_ddi_ip_data(net_views, ea_path, ddi_path, logger):
     exit()
 
 
-def _get_views(work_sheet):
+def _get_views(data_lists):
     """Builds a set list of views from within src_ws"""
-    ddi_view_col = work_sheet.row_values(0).index('DDI View')
-    view_col = list(set(work_sheet.col_values(ddi_view_col)[1:]))
-    return view_col
+    views = []
+    for data_list in data_lists:
+        views.append(data_list[15])
+    return list(set(views))
 
 
 def main():
     """
+    NEEDS UPDATING!!!
     Doc: This script takes the updates made to the master sheet.  Checks and
         converts the data generated from "ipr_ddi_to_ddi_diff.py" into a
         format that can be used for import into DDI.
@@ -857,36 +862,54 @@ def main():
     delete_file = os.path.join(reports_data_path, 'Delete Import.csv')
     override_file = os.path.join(reports_data_path, 'Override Import.csv')
 
+    write = Writer()
+    dir_cls = DirectoryValues()
+    filenames_cls = DataFileNames()
+    read_lib_cls = ReadLibraries()
+    vrf_to_view = read_lib_cls.read_vrf_to_view()
+    agencies = read_lib_cls.read_agency_list()
+
     logger.info('Loading Data from source file')
     src_wb = open_workbook(src_file)
     src_ws = src_wb.sheet_by_index(0)
 
-    logger.info('Compiling source file list of views.')
-    views = _get_views(src_ws)
-
-    # Update to True if a fresh set of data is needed from ddi.
-    ddi_api_call = False
-    if ddi_api_call:
-        logger.info('ddi_api_call has been set to True.  Querying DDI.')
-        get_ddi_ip_data(views, ea_data_file, ddi_data_file, logger)
-
     def clean_data(data):
         """Build listed dataset from worksheet."""
         src_list = []
-        no_net_view = []
+        not_properly_built = []
         for row in range(data.nrows):
             # Ignore header row.
             if row == 0:
                 continue
             # Ignore blank row.
-            if data.row_values(row)[1] == '' and \
-                    data.row_values(row)[15] == '':
+            cleaning_data = data.row_values(row)
+            if cleaning_data[1] == '' and \
+                    cleaning_data[15] == '':
                 continue
-            # Capture lines that do not have a view listed.
-            if data.row_values(row)[1] and not data.row_values(row)[15]:
-                no_net_view.append(data.row_values(row))
+            # Capture lines that do not have a view listed. Sometimes add
+            # dispostions do not have a view listed.  This will help populated.
+            if cleaning_data[1] and not cleaning_data[15]:
+                if cleaning_data[0].lower() == 'add':
+                    # Checks vlan desc for vrf.
+                    if cleaning_data[11] in vrf_to_view:
+                        cleaning_data[15] = \
+                            vrf_to_view[cleaning_data[11]]
+                    else:
+                        cleaning_data[16] = 'VRF Not Found'
+                        not_properly_built.append(cleaning_data)
+                        continue
+                    if cleaning_data[10] and cleaning_data[10] \
+                            in agencies:
+                        cleaning_data[14] = 'networkcontainer'
+                        src_list.append(cleaning_data)
+                    else:
+                        cleaning_data[10] = ''
+                        src_list.append(cleaning_data)
+                    continue
+                cleaning_data[16] = 'Missing View.'
+                not_properly_built.append(cleaning_data)
                 continue
-            src_list.append(data.row_values(row))
+            src_list.append(cleaning_data)
 
         # Clean's src_list values.
         src_list = [[item.replace('\t', '') for item in row
@@ -904,9 +927,21 @@ def main():
         for enum, row in enumerate(src_list):
             row[0] = row[0].lower()
             src_list[enum] = row
-        return src_list
+        return src_list, not_properly_built
 
-    src_data = clean_data(src_ws)
+    src_data, errored_lines = clean_data(src_ws)
+    write.write_to_csv_w(dir_cls.processed_dir(),
+                         filenames_cls.errored_import_configs(),
+                         errored_lines)
+
+    logger.info('Compiling source file list of views.')
+    views = _get_views(src_data)
+
+    # Update to True if a fresh set of data is needed from ddi.
+    ddi_api_call = False
+    if ddi_api_call:
+        logger.info('ddi_api_call has been set to True.  Querying DDI.')
+        get_ddi_ip_data(views, ea_data_file, ddi_data_file, logger)
 
     # Open DDI data compiled from ddi_api_call.
     with open(ddi_data_file, 'rb') as file_in:

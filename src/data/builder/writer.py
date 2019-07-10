@@ -16,6 +16,7 @@ permissions and limitations under the License.
 """
 
 import pickle
+import csv
 
 
 class Writer:
@@ -33,9 +34,16 @@ class Writer:
             pickle.dump(data, output)
 
     @staticmethod
-    def write_to_csv(file_dir, file_name, data):
-        """STILL IN DEVELOPMENT!"""
-        return file_dir, file_name, data
+    def write_to_csv_w(file_dir, file_name, data):
+        with open(file_dir + '\\' + file_name, "w", newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerows(data)
+
+    @staticmethod
+    def write_to_csv_wb(file_dir, file_name, data):
+        with open(file_dir + '\\' + file_name, "wb", newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerows(data)
 
     @staticmethod
     def write_to_xlsx(file_dir, file_name, data):

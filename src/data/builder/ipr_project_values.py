@@ -264,3 +264,8 @@ class DataFileNames:
     def errored_import_configs():
         """Returns source filename for global addresses."""
         return 'errored_import_lines.csv'
+
+    @staticmethod
+    def errored_import_configs():
+        """Returns source filename for global addresses."""
+        return 'errored_import_add_lines.csv'

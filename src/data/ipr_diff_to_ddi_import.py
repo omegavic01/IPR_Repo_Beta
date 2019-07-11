@@ -474,6 +474,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
             if 'add' in add_or_del_row[0]:
                 if add_or_del_row[1] in \
                         ddi_data[views_index[add_or_del_row[15]]]:
+                    add_or_del_row[16] = 'Found in ipam database.'
                     errored_list.append(add_or_del_row)
                     continue
                 else:
@@ -482,13 +483,20 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
 
             # delete check
             if 'del' in add_or_del_row[0] and add_or_del_row[1] in \
-                    ddi_data[views_index[add_or_del_row[15]]][
-                        add_or_del_row[1]]:
+                    ddi_data[views_index[add_or_del_row[15]]]:
                 import_delete.append([add_or_del_row[15],
                                       add_or_del_row[1],
                                       add_or_del_row[14]])
                 continue
+            elif 'del' in add_or_del_row[0] and add_or_del_row[1] not in \
+                    ddi_data[views_index[add_or_del_row[15]]]:
+                add_or_del_row[16] = 'Missing network in ipam db.'
+                errored_list.append(add_or_del_row)
+                continue
             unused_list.append(add_or_del_row)
+        write.write_to_csv_w(dir_cls.reports_dir(),
+                             filenames_cls.errored_import_configs(),
+                             errored_list)
 
     def _ea_in_disposition_col0_and_empty_ipr_d_col():
         """Disposition col0 check and an empty ipr disposition column."""
@@ -666,7 +674,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
     # Check for extensible attribute in Disposition column[0].
     # If found and IPR D column is empty append for writing.
     ea_ipr_d_values = ['leaf', 'dup', 'followup', 'decom', 'adv', 'divest',
-                       'ignore', 're-ip', 'parent', 'drop reserve']
+                       'ignore', 're-ip', 'parent', 'drop reserve', 'rna']
     _add_and_del()
     _ea_in_disposition_col0_and_empty_ipr_d_col()
     _comment_check()
@@ -862,10 +870,6 @@ def main():
     delete_file = os.path.join(reports_data_path, 'Delete Import.csv')
     override_file = os.path.join(reports_data_path, 'Override Import.csv')
 
-    write = Writer()
-    dir_cls = DirectoryValues()
-    filenames_cls = DataFileNames()
-    read_lib_cls = ReadLibraries()
     vrf_to_view = read_lib_cls.read_vrf_to_view()
     agencies = read_lib_cls.read_agency_list()
 
@@ -904,6 +908,7 @@ def main():
                         src_list.append(cleaning_data)
                     else:
                         cleaning_data[10] = ''
+                        cleaning_data[14] = 'networkcontainer'
                         src_list.append(cleaning_data)
                     continue
                 cleaning_data[16] = 'Missing View.'
@@ -930,7 +935,7 @@ def main():
         return src_list, not_properly_built
 
     src_data, errored_lines = clean_data(src_ws)
-    write.write_to_csv_w(dir_cls.processed_dir(),
+    write.write_to_csv_w(dir_cls.reports_dir(),
                          filenames_cls.errored_import_configs(),
                          errored_lines)
 
@@ -989,5 +994,9 @@ if __name__ == '__main__':
         'username': os.environ.get("DDI_USERNAME"),
         'password': os.environ.get("DDI_PASSWORD")
     }
+    write = Writer()
+    dir_cls = DirectoryValues()
+    filenames_cls = DataFileNames()
+    read_lib_cls = ReadLibraries()
 
     main()

@@ -228,7 +228,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
     @staticmethod
     def _tweak_and_save_workbook(write):
         workbook = write.book
-        worksheet = write.sheets['Master']
+        worksheet = write.sheets['Summary']
         left = workbook.add_format({'align': 'left'})
         worksheet.set_column('W:Y', None, left)
         write.save()
@@ -355,18 +355,34 @@ class IpamDataProcessed(_BaseIpamProcessing):
         temp_df = master_data.copy()
         # Filter out uneeded data.
         temp_df = temp_df.loc[
-            (temp_df['extattrs_IPR Designation_value'] != 'leaf') &
-            (temp_df['extattrs_IPR Designation_value'] != 'dup') &
-            (temp_df['extattrs_IPR Designation_value'] != 'ignore') &
-            (temp_df['extattrs_IPR Designation_value'] != 'divest') &
-            (temp_df['extattrs_IPR Designation_value'] != 're-ip') &
-            (temp_df['extattrs_IPR Designation_value'] != 'drop reserve') &
-            (temp_df['extattrs_IPR Designation_value'] != 'parent') &
-            (temp_df['extattrs_IPR Designation_value'] != 'decom') &
             (temp_df['/Cidr'] != 32) &
             (temp_df['network'] != '100.88.0.0/29') &
             (temp_df['network'] != '100.64.0.0/29') &
             (temp_df['network_view'] != 'Public-IP')]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'leaf', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'dup', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'ignore', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'divest', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                're-ip', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'drop reserve', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'parent', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'decom', na=False)]
 
         # Convert to dict for data processing.
         temp_dict = temp_df.to_dict('index')
@@ -461,7 +477,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
         # Master and Uncategorized processing.
         master_df, uncategorized_df = \
             self.master_and_uncategorized_sheet_processing(processing_data)
-        master_df.to_excel(writer, sheet_name='Master', index=False)
+        master_df.to_excel(writer, sheet_name='Summary', index=False)
 
         # Full Dataset sheet
         processing_data.to_excel(writer, sheet_name='Full-Dataset',
@@ -487,10 +503,20 @@ class IpamDataProcessed(_BaseIpamProcessing):
 
         # IPR Designation Filters Sheets
         for processing in processing_data_worksheets:
-            processing_data[processing_data[
-                processing[1]].isin([processing[0]])].to_excel(
-                    writer, sheet_name=processing[2], index=processing[3],
-                    header=self.env_cls.header_row_list())
+            if isinstance(processing[0], str):
+                processing_data[processing_data[
+                    processing[1]].str.contains(processing[0], na=False)].\
+                    to_excel(writer,
+                             sheet_name=processing[2],
+                             index=processing[3],
+                             header=self.env_cls.header_row_list())
+            if isinstance(processing[0], int):
+                processing_data[processing_data[
+                    processing[1]].isin([processing[0]])]. \
+                    to_excel(writer,
+                             sheet_name=processing[2],
+                             index=processing[3],
+                             header=self.env_cls.header_row_list())
 
         # Uncategorized Sheet
         uncategorized_df.to_excel(

@@ -37,6 +37,9 @@ class EnvironmentValues:
         }
         self._ipr_header_dict = os.environ.get("IPR_HEADER_ROW_DICT")
         self._ipr_header_list = os.environ.get("IPR_HEADER_ROW_LIST")
+        self._tacacs_username = os.environ.get("TACACS_USERNAME")
+        self._tacacs_password = os.environ.get("TACACS_PASSWORD")
+        self._tody_cools = os.environ.get("TODY_COOLS")
 
     def payload_url(self):
         """Returns DDI_URL from .env file."""
@@ -57,6 +60,18 @@ class EnvironmentValues:
     def header_row_list(self):
         """Returns IPR_HEADER_ROW from .env file."""
         return self._ipr_header_list.split(',')
+
+    def tacacs_username(self):
+        """Returns TACACS_USERNAME from .env file."""
+        return self._tacacs_username
+
+    def tacacs_password(self):
+        """Returns TACACS_PASSWORD from .env file."""
+        return self._tacacs_password
+
+    def tody_cools(self):
+        """Returns TODY_COOLS IP from .env file."""
+        return self._tody_cools
 
 
 class DirectoryValues:
@@ -215,5 +230,42 @@ class DataFileNames:
         """Returns filename for networkcontainers filename."""
         return 'MASTER - Report by percent-BLANK.xlsx'
 
+    @staticmethod
+    def vrf_to_agency_filename():
+        """Returns filename for vrf to agency dictionary filename."""
+        return 'vrf_to_agency_dict.pkl'
 
+    @staticmethod
+    def ipam_agency_list_filename():
+        """Returns filename for vrf to agency dictionary filename."""
+        return 'ipam_agency_list.pkl'
 
+    @staticmethod
+    def view_to_vrf_lib():
+        """Returns filename for vrf to agency dictionary filename."""
+        return 'view_to_vrf_lib.pkl'
+
+    @staticmethod
+    def vrf_to_view_lib():
+        """Returns filename for vrf to agency dictionary filename."""
+        return 'vrf_to_view_lib.pkl'
+
+    @staticmethod
+    def src_global_addresses():
+        """Returns source filename for global addresses."""
+        return 'Global Addresses for IPR 2019-05-01.xlsx'
+
+    @staticmethod
+    def global_addresses_lib():
+        """Returns source filename for global addresses."""
+        return 'global_addresses.pkl'
+
+    @staticmethod
+    def errored_import_configs():
+        """Returns source filename for global addresses."""
+        return 'errored_import_lines.csv'
+
+    @staticmethod
+    def errored_import_configs():
+        """Returns source filename for global addresses."""
+        return 'errored_import_add_lines.csv'

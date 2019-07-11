@@ -359,6 +359,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
             (temp_df['network'] != '100.88.0.0/29') &
             (temp_df['network'] != '100.64.0.0/29') &
             (temp_df['network_view'] != 'Public-IP')]
+        temp_df =temp_df[~temp_df['/Cidr'].isin(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'leaf', na=False)]
@@ -494,7 +496,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
              'Filt-Drop Reserve', False],
             ['parent', 'extattrs_IPR Designation_value',
              'Filt-OMC-IT-Parent Subnet', False],
-            [32, '/Cidr', 'Filt-Cidr-32', False],
+            [[32], '/Cidr', 'Filt-Cidr-32', False],
+            [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+             '/Cidr', 'Filt-Large-Subnets', False],
             ['100.88.0.0/29', 'network', 'Filt-100.88-Cidr-29', False],
             ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
             ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
@@ -510,9 +514,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
                              sheet_name=processing[2],
                              index=processing[3],
                              header=self.env_cls.header_row_list())
-            if isinstance(processing[0], int):
+            if isinstance(processing[0], (int, list)):
                 processing_data[processing_data[
-                    processing[1]].isin([processing[0]])]. \
+                    processing[1]].isin(processing[0])]. \
                     to_excel(writer,
                              sheet_name=processing[2],
                              index=processing[3],

@@ -919,6 +919,13 @@ def main():
             src_list.append(cleaning_data)
 
         # Clean's src_list values.
+        # Removes errored agencies.
+        for enum, row in enumerate(src_list):
+            if row[10] in agencies:
+                continue
+            else:
+                src_list[enum][10] = ''
+        # Revmoes tab's that may have been incorrectly inserted.
         src_list = [[item.replace('\t', '') for item in row
                      if isinstance(item, str)]
                     for row in src_list]

@@ -228,7 +228,7 @@ class DataFileNames:
     @staticmethod
     def percent_blank_filename():
         """Returns filename for networkcontainers filename."""
-        return 'MASTER - Report by percent-BLANK.xlsx'
+        return 'Summary - Report by percent-BLANK.xlsx'
 
     @staticmethod
     def vrf_to_agency_filename():
@@ -266,6 +266,6 @@ class DataFileNames:
         return 'errored_import_lines.csv'
 
     @staticmethod
-    def errored_import_configs():
+    def errored_import_add_and_del_configs():
         """Returns source filename for global addresses."""
-        return 'errored_import_add_lines.csv'
+        return 'errored_import_add_and_del_lines.csv'

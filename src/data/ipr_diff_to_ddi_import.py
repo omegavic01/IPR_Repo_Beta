@@ -494,9 +494,11 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
                 errored_list.append(add_or_del_row)
                 continue
             unused_list.append(add_or_del_row)
-        write.write_to_csv_w(dir_cls.reports_dir(),
-                             filenames_cls.errored_import_configs(),
-                             errored_list)
+        if errored_list:
+            write.write_to_csv_w(dir_cls.reports_dir(),
+                                 filenames_cls.
+                                 errored_import_add_and_del_configs(),
+                                 errored_list)
 
     def _ea_in_disposition_col0_and_empty_ipr_d_col():
         """Disposition col0 check and an empty ipr disposition column."""
@@ -935,9 +937,10 @@ def main():
         return src_list, not_properly_built
 
     src_data, errored_lines = clean_data(src_ws)
-    write.write_to_csv_w(dir_cls.reports_dir(),
-                         filenames_cls.errored_import_configs(),
-                         errored_lines)
+    if errored_lines:
+        write.write_to_csv_w(dir_cls.reports_dir(),
+                             filenames_cls.errored_import_configs(),
+                             errored_lines)
 
     logger.info('Compiling source file list of views.')
     views = _get_views(src_data)

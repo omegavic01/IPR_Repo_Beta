@@ -12,7 +12,7 @@ from xlrd import open_workbook
 import requests
 from dotenv import find_dotenv, load_dotenv
 from builder import DataFileNames, DirectoryValues
-from builder import Writer
+from builder import Writer, Reader
 from agency_vrf_view_libs import ReadLibraries
 
 
@@ -453,7 +453,7 @@ def _get_rekey_ddi_data(ddi_data):
     return ddi_data
 
 
-def _get_diff_data(views_index, src_data, ea_index, ddi_data):
+def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
     """
     This function creates two separate dict's for overlap or merge imports
     based on how DDI handles imports.
@@ -472,6 +472,10 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
         for add_or_del_row in src_data:
             # Add Check.
             if 'add' in add_or_del_row[0]:
+                if add_or_del_row[15] in ddi_views and \
+                                add_or_del_row[15] not in views_index:
+                    import_add.append(add_or_del_row)
+                    continue
                 if add_or_del_row[1] in \
                         ddi_data[views_index[add_or_del_row[15]]]:
                     add_or_del_row[16] = 'Found in ipam database.'
@@ -579,6 +583,10 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
 
     def _listed_ea_column_check():
         """Checks non-listable ea columns."""
+
+        def diff(li1, li2):
+            return list(set(li1) - set(li2))
+
         for ea_row in unused_list:
             ddi_index = views_index[ea_row[15]]
             # This check is performed in
@@ -587,11 +595,6 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
                     'IPR Designation' not in \
                     ddi_data[ddi_index][ea_row[1]]['extattrs']:
                 continue
-            # Update IPR D src column with ea_row[0] for processing.
-            # WORK IN PROGRESS
-            elif ea_row[0] in ea_ipr_d_values and 'IPR Designation' \
-                    in ddi_data[ddi_index][ea_row[1]]['extattrs']:
-                pass
             # Processing listable columns.
             for key, value in ea_index.items():
                 # Skip's unused keys.
@@ -605,65 +608,75 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data):
                 # value, check value in IPR D col to ea ipr d attribute list,
                 # check IPR D col value eq ddi value.
                 # On not listed IPR D values.
-                if key == 'IPR Designation':
-                    if ea_row[0] in ea_ipr_d_values \
-                        and ',' not in ea_row[16] \
-                            and ea_row[16] in ea_ipr_d_values:
-                        ea_row[16] = ea_row[16] + ',' + ea_row[0]
-                        import_override.append([ea_row[15].strip(),
-                                                ea_row[1].strip(),
-                                                ea_row[14].strip(),
-                                                {key: ea_row[16]}])
-                        continue
-                # Check Disposition col, check for comma not in IPR D col
-                # value, check value in IPR D col to ea ipr d attribute list,
-                # check IPR D col value eq ddi value.
-                # On not listed IPR D values.
-                    elif ea_row[0] in ea_ipr_d_values \
-                            and ',' not in ea_row[16] \
-                            and ea_row[16] not in ea_ipr_d_values:
-                        import_override.append([ea_row[15].strip(),
-                                                ea_row[1].strip(),
-                                                ea_row[14].strip(),
-                                                {key: ea_row[0]}])
-                        continue
-#                # Check Disposition col. and if IPR D listed value needs
-#                # updating. On listed IPR D values.
-#                if ea_row[0].lower().strip() in ea_ipr_d_values \
-#                        and ',' in ea_row[16]:
-#                    temp_list = ea_row[16].split(',')
-#                    temp_list = [x.strip() for x in temp_list]
-#                    if ea_row[0].lower().strip() in temp_list:
-#                        continue
-#                    else:
-#                        temp_list.append(ea_row[0].lower().strip())
-#                        temp_dict_override.update({key: temp_list})
-#                        import_override.append([ea_row[15].strip(),
-#                                                ea_row[1].strip(),
-#                                                ea_row[14].strip(),
-#                                                temp_dict_override])
-#                        continue
+                if key in ['IPR Designation']:
+                    ipr_temp_list = []
+                    ipam_temp_list = []
+                    # Building list for diff's against DDI data.
+                    ipr_temp_list.append(ea_row[0])
+                    # Extend list if listed values in IPR D column.
+                    if ',' in ea_row[16]:
+                        ipr_temp_list.extend([x.strip()
+                                                for x in
+                                                ea_row[16].split(',')])
+                    # Append list if non-listed values in IPR D column.
+                    if ',' not in ea_row[16] and ea_row[16]:
+                        ipr_temp_list.append(ea_row[16])
+                    # Remove blank elements from list.
+                    ipr_temp_list = [x for x in ipr_temp_list if x]
 
-                # Builds dataset for non-listed values. Final Step.
-                # If key not in ddi data and src value is not none.
-                # Assign to merge.
-                if key not in ddi_data[ddi_index][ea_row[1]]['extattrs'] \
-                        and ea_row[value] not in ['', 'DDI']:
-                    import_merge.append([ea_row[15].strip(),
-                                         ea_row[1].strip(),
-                                         ea_row[14].strip(),
-                                         {key: ea_row[value]}])
-                    continue
-                # Checks diff against src value and a populated value in the
-                # ddi data and replaces with src value.
-                if ea_row[value] != \
-                        ddi_data[ddi_index][
-                            ea_row[1]]['extattrs'][key]['value']:
-                    import_override.append([ea_row[15],
-                                            ea_row[1],
-                                            ea_row[14],
-                                            {key: ea_row[value]}])
-                    continue
+                    # Building DDI list for diff against the IPR D Columns
+                    if isinstance(ddi_data[ddi_index][
+                                      ea_row[1]]['extattrs'][
+                                          key]['value'], list):
+                        ipam_temp_list.extend(ddi_data[ddi_index][
+                                                  ea_row[1]]['extattrs'][
+                                                  key]['value'])
+                    else:
+                        ipam_temp_list.append(ddi_data[ddi_index][
+                                                  ea_row[1]]['extattrs'][
+                                                  key]['value'])
+                    # Check for diff between listed sets.
+                    in_ipam_not_ipr = diff(ipam_temp_list, ipr_temp_list)
+                    in_ipr_not_ipam = diff(ipr_temp_list, ipam_temp_list)
+                    if in_ipam_not_ipr and in_ipr_not_ipam:
+                        if len(ipr_temp_list) > 1:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ','.join(
+                                                        ipr_temp_list)}])
+                        else:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ipr_temp_list[0]}])
+                        continue
+                    if in_ipam_not_ipr and not in_ipr_not_ipam:
+                        if len(ipr_temp_list) > 1:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ','.join(
+                                                        ipr_temp_list)}])
+                        else:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ipr_temp_list[0]}])
+                        continue
+                    if in_ipr_not_ipam and not in_ipam_not_ipr:
+                        if len(ipr_temp_list) > 1:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ','.join(
+                                                        ipr_temp_list)}])
+                        else:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ipr_temp_list[0]}])
+                        continue
 
     # Local scope variables.
     import_add = []
@@ -822,6 +835,16 @@ def get_ddi_ip_data(net_views, ea_path, ddi_path, logger):
     exit()
 
 
+def _get_ddi_views():
+    ddi_views = []
+    raw_ddi_views = reader_cls.read_from_pkl(dir_cls.raw_dir(),
+                                             filenames_cls.
+                                             network_views_filename())
+    for ddi_dict in raw_ddi_views:
+        ddi_views.append(ddi_dict['name'])
+    return ddi_views
+
+
 def _get_views(data_lists):
     """Builds a set list of views from within src_ws"""
     views = []
@@ -862,7 +885,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'Att Diff vKP.xlsx')
+                            'Att Diff vAL test.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')
@@ -889,8 +912,8 @@ def main():
                 continue
             # Ignore blank row.
             cleaning_data = data.row_values(row)
-            if cleaning_data[1] == '' and \
-                    cleaning_data[15] == '':
+            if cleaning_data[1].strip() == '' and \
+                    cleaning_data[15].strip() == '':
                 continue
             # Capture lines that do not have a view listed. Sometimes add
             # dispostions do not have a view listed.  This will help populated.
@@ -950,6 +973,7 @@ def main():
                              errored_lines)
 
     logger.info('Compiling source file list of views.')
+    ddi_views = _get_ddi_views()
     views = _get_views(src_data)
 
     # Update to True if a fresh set of data is needed from ddi.
@@ -968,7 +992,7 @@ def main():
 
     # Building data sets for in preparation for writing.
     add, delete, disposition, merge, override = \
-        _get_diff_data(views_index, src_data, ea_index, ddi_data)
+        _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views)
 
     # Send data off to be written.
     logger.info('Writing Data.  Please refer to the reports dir.')
@@ -1008,5 +1032,6 @@ if __name__ == '__main__':
     dir_cls = DirectoryValues()
     filenames_cls = DataFileNames()
     read_lib_cls = ReadLibraries()
+    reader_cls = Reader()
 
     main()

@@ -86,6 +86,6 @@ if __name__ == '__main__':
     load_dotenv(DOTENV_PATH)
 
     # Headerrow for IPR Output
-    HEADER_ROW = os.environ.get("IPR_HEADER_ROW").split(',')
+    HEADER_ROW = os.environ.get("IPR_HEADER_ROW_LIST").split(',')
 
     main()

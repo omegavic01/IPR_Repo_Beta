@@ -453,6 +453,20 @@ def _get_rekey_ddi_data(ddi_data):
     return ddi_data
 
 
+def _get_ea_listed_values(ea_raw_data):
+    """Parses raw ipam data and returns the values in listed format.
+
+    """
+    ea_list_values_dict = {}
+    for ea in ea_raw_data:
+        if ea['type'] == 'ENUM' and ea['name'] in \
+                ['Datacenter', 'IPR Designation']:
+            ea_list_values_dict[ea['name']] = []
+            for list_value in ea['list_values']:
+                ea_list_values_dict[ea['name']].append(list_value['value'])
+    return ea_list_values_dict
+
+
 def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
     """
     This function creates two separate dict's for overlap or merge imports
@@ -511,8 +525,9 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[disposition_row[15]]
             # Checks disposition column value and checks for IPR D value.
             # If no IPR D in extattrs dict stores the src data for updates.
-            if disposition_row[0] in ea_ipr_d_values and 'IPR Designation' not\
-                    in ddi_data[ddi_index][disposition_row[1]]['extattrs']:
+            if disposition_row[0] in ea_listed_values['IPR Designation'] and \
+                    'IPR Designation' not in \
+                    ddi_data[ddi_index][disposition_row[1]]['extattrs']:
                 import_merge_disposition.append(
                     [disposition_row[15],
                      disposition_row[1],
@@ -591,7 +606,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[ea_row[15]]
             # This check is performed in
             # _ea_in_disposition_col0_and_empty_ipr_d_col
-            if ea_row[0] in ea_ipr_d_values and \
+            if ea_row[0] in ea_listed_values['IPR Designation'] and \
                     'IPR Designation' not in \
                     ddi_data[ddi_index][ea_row[1]]['extattrs']:
                 continue
@@ -608,19 +623,24 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 # value, check value in IPR D col to ea ipr d attribute list,
                 # check IPR D col value eq ddi value.
                 # On not listed IPR D values.
-                if key in ['IPR Designation']:
+                if key in ea_listed_values:
                     ipr_temp_list = []
                     ipam_temp_list = []
                     # Building list for diff's against DDI data.
-                    ipr_temp_list.append(ea_row[0])
+                    if ea_row[0] in ea_listed_values[key]:
+                        ipr_temp_list.append(ea_row[0])
                     # Extend list if listed values in IPR D column.
-                    if ',' in ea_row[16]:
+                    if ',' in ea_row[ea_index[key]]:
                         ipr_temp_list.extend([x.strip()
-                                                for x in
-                                                ea_row[16].split(',')])
+                                              for x in ea_row[ea_index[key]].
+                                              split(',')
+                                              if x.strip() in
+                                              ea_listed_values[key]])
                     # Append list if non-listed values in IPR D column.
-                    if ',' not in ea_row[16] and ea_row[16]:
-                        ipr_temp_list.append(ea_row[16])
+                    if ',' not in ea_row[ea_index[key]] and \
+                            ea_row[ea_index[key]] in \
+                            ea_listed_values[key]:
+                        ipr_temp_list.append(ea_row[ea_index[key]])
                     # Remove blank elements from list.
                     ipr_temp_list = [x for x in ipr_temp_list if x]
 
@@ -638,33 +658,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     # Check for diff between listed sets.
                     in_ipam_not_ipr = diff(ipam_temp_list, ipr_temp_list)
                     in_ipr_not_ipam = diff(ipr_temp_list, ipam_temp_list)
-                    if in_ipam_not_ipr and in_ipr_not_ipam:
-                        if len(ipr_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipr_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipr_temp_list[0]}])
-                        continue
-                    if in_ipam_not_ipr and not in_ipr_not_ipam:
-                        if len(ipr_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipr_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipr_temp_list[0]}])
-                        continue
-                    if in_ipr_not_ipam and not in_ipam_not_ipr:
+                    if in_ipam_not_ipr or in_ipr_not_ipam:
                         if len(ipr_temp_list) > 1:
                             import_override.append([ea_row[15].strip(),
                                                     ea_row[1].strip(),
@@ -686,10 +680,12 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
     import_merge_disposition = []
     unused_list = []
     errored_list = []
-    # Check for extensible attribute in Disposition column[0].
-    # If found and IPR D column is empty append for writing.
-    ea_ipr_d_values = ['leaf', 'dup', 'followup', 'decom', 'adv', 'divest',
-                       'ignore', 're-ip', 'parent', 'drop reserve', 'rna']
+    # EA Listed (ENUM) attribute values.
+    ea_listed_values_raw = reader_cls.\
+        read_from_pkl(dir_cls.raw_dir(),
+                      filenames_cls.
+                      extensible_attributes_list_values_filename())
+    ea_listed_values = _get_ea_listed_values(ea_listed_values_raw)
     _add_and_del()
     _ea_in_disposition_col0_and_empty_ipr_d_col()
     _comment_check()
@@ -885,7 +881,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'Att Diff vAL test.xlsx')
+                            'Att Diff vAL.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')

@@ -118,7 +118,7 @@ class IpamCallTypes:
                "network_view," \
                "utilization&" \
                "network_view=" + view + \
-               "&_max_results=-5000"
+               "&_max_results=-25000"
 
     @staticmethod
     def networkcontainers(view):
@@ -131,4 +131,4 @@ class IpamCallTypes:
                "network_view," \
                "utilization&" \
                "network_view=" + view + \
-               "&_max_results=-5000"
+               "&_max_results=-25000"

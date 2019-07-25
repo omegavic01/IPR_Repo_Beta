@@ -37,7 +37,6 @@ class IpamReports:
         self.ipam_to_ipr_xlsx = self.process_dir + '\\' + self.ipam_filename
         self.date = self._get_file_date(self.ipam_to_ipr_xlsx)
 
-
     @staticmethod
     def _get_file_date(file):
         """Returns creation date of file."""

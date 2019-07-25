@@ -7,6 +7,7 @@ import pickle
 import csv
 import socket
 import struct
+import re
 import logging
 from xlrd import open_workbook
 import requests
@@ -525,6 +526,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[disposition_row[15]]
             # Checks disposition column value and checks for IPR D value.
             # If no IPR D in extattrs dict stores the src data for updates.
+            if disposition_row[1] not in ddi_data[ddi_index]:
+                continue
             if disposition_row[0] in ea_listed_values['IPR Designation'] and \
                     'IPR Designation' not in \
                     ddi_data[ddi_index][disposition_row[1]]['extattrs']:
@@ -540,6 +543,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[comment_row[15]]
             # Checks for empty src value and empty ddi data value.
             # Continues if True.
+            if comment_row[1] not in ddi_data[ddi_index]:
+                continue
             if 'comment' not in ddi_data[ddi_index][comment_row[1]]\
                     and comment_row[12] == '':
                 continue
@@ -569,6 +574,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[ea_row[15]]
             for key, value in ea_index.items():
                 # ea attributes that could be listed.
+                if ea_row[1] not in ddi_data[ddi_index]:
+                    continue
                 if key == 'Datacenter' or key == 'IPR Designation':
                     continue
                 # Checks for empty src value and empty ddi data value.
@@ -606,6 +613,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             ddi_index = views_index[ea_row[15]]
             # This check is performed in
             # _ea_in_disposition_col0_and_empty_ipr_d_col
+            if ea_row[1] not in ddi_data[ddi_index]:
+                continue
             if ea_row[0] in ea_listed_values['IPR Designation'] and \
                     'IPR Designation' not in \
                     ddi_data[ddi_index][ea_row[1]]['extattrs']:
@@ -881,7 +890,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'Att Diff vAL.xlsx')
+                            'FH 10_188_Subnets.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')
@@ -900,6 +909,7 @@ def main():
 
     def clean_data(data):
         """Build listed dataset from worksheet."""
+        vrf_regex = re.compile(r"((\w{1}\d{3})\-(\d{2})\-(\w{2})\-(\w{2}))")
         src_list = []
         not_properly_built = []
         for row in range(data.nrows):
@@ -916,9 +926,16 @@ def main():
             if cleaning_data[1] and not cleaning_data[15]:
                 if cleaning_data[0].lower() == 'add':
                     # Checks vlan desc for vrf.
-                    if cleaning_data[11] in vrf_to_view:
+                    def _find_vrf_in_vlan_desc(find_vrf):
+                        # Reference vrf_regex for VRF Regex Expression.
+                        finding_vrf = find_vrf[11].split(',')
+                        for potential_vrf in finding_vrf:
+                            if vrf_regex.match(potential_vrf):
+                                return potential_vrf
+                    found_vrf = _find_vrf_in_vlan_desc(cleaning_data)
+                    if found_vrf in vrf_to_view:
                         cleaning_data[15] = \
-                            vrf_to_view[cleaning_data[11]]
+                            vrf_to_view[found_vrf]
                     else:
                         cleaning_data[16] = 'VRF Not Found'
                         not_properly_built.append(cleaning_data)

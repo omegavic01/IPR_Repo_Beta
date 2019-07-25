@@ -23,18 +23,18 @@ Option 1.
 gather_current_ipam_data = True
 if gather_current_ipam_data:
     ip_data = IpamGetsToWrite()
-    #ip_data.get_extensible_attributes()
+    ip_data.get_extensible_attributes()
     ip_data.get_extensible_attributes_list_values()
-    #ip_data.get_network_views()
-    #ip_data.get_networks()
-    #ip_data.get_networkcontainers()
+    ip_data.get_network_views()
+    ip_data.get_networks()
+    ip_data.get_networkcontainers()
 
 """Run Ipam Data Interim.  This takes the data from the lastime
 gather_current_ipam_data was run.  Then compiles the networks and 
 networkcontainers into a .xlsx and .pickle file in the interim dir.
 This data is expected to be processed by other scripts
 """
-run_ipam_data_processing_interim = False
+run_ipam_data_processing_interim = True
 if run_ipam_data_processing_interim:
     data_filenames_cls = DataFileNames()
     ipam_interim = IpamDataInterim()
@@ -46,7 +46,7 @@ if run_ipam_data_processing_interim:
         data_filenames_cls.ipam_dump_interim_dicted())
 
 
-run_ipam_data_processing_processed = False
+run_ipam_data_processing_processed = True
 if run_ipam_data_processing_processed:
     data_filenames_cls = DataFileNames()
     dir_cls = DirectoryValues()
@@ -58,7 +58,7 @@ if run_ipam_data_processing_processed:
                            data_filenames_cls.ipam_dump_interim_panda()))
 
 
-run_ipam_reports = True
+run_ipam_reports = False
 if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()

@@ -269,3 +269,8 @@ class DataFileNames:
     def errored_import_add_and_del_configs():
         """Returns source filename for global addresses."""
         return 'errored_import_add_and_del_lines.csv'
+
+    @staticmethod
+    def hold_my_beer_report():
+        """Returns source filename for global addresses."""
+        return 'hold_my_bear_report.xlsx'

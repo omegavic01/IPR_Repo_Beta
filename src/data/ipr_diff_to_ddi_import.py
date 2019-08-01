@@ -650,10 +650,36 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                             ea_row[ea_index[key]] in \
                             ea_listed_values[key]:
                         ipr_temp_list.append(ea_row[ea_index[key]])
+                    else:
+                        import_override.append([ea_row[15].strip(),
+                                                ea_row[1].strip(),
+                                                ea_row[14].strip(),
+                                                {key: ea_row[ea_index[key]]}])
+                        continue
                     # Remove blank elements from list.
                     ipr_temp_list = [x for x in ipr_temp_list if x]
 
-                    # Building DDI list for diff against the IPR D Columns
+                    # If in IPR and no key listed in IPAM data.
+                    if ea_row[1] == '192.168.0.0':
+                        print('myvar: {}'.format(ea_row[1]))
+                    if key not in \
+                            ddi_data[ddi_index][ea_row[1]]['extattrs'] \
+                            and ipr_temp_list:
+                        if len(ipr_temp_list) > 1:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ','.join(
+                                                        ipr_temp_list)}])
+                        else:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ipr_temp_list[
+                                                        0]}])
+                        continue
+
+                    # Building DDI list for diff against the Multi Att. Columns
                     if isinstance(ddi_data[ddi_index][
                                       ea_row[1]]['extattrs'][
                                           key]['value'], list):
@@ -667,7 +693,20 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     # Check for diff between listed sets.
                     in_ipam_not_ipr = diff(ipam_temp_list, ipr_temp_list)
                     in_ipr_not_ipam = diff(ipr_temp_list, ipam_temp_list)
-                    if in_ipam_not_ipr or in_ipr_not_ipam:
+                    if in_ipam_not_ipr:
+                        if len(ipam_temp_list) > 1:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ','.join(
+                                                        ipam_temp_list)}])
+                        else:
+                            import_override.append([ea_row[15].strip(),
+                                                    ea_row[1].strip(),
+                                                    ea_row[14].strip(),
+                                                    {key: ipam_temp_list[0]}])
+                        continue
+                    if in_ipr_not_ipam:
                         if len(ipr_temp_list) > 1:
                             import_override.append([ea_row[15].strip(),
                                                     ea_row[1].strip(),
@@ -890,7 +929,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'FH 10_188_Subnets.xlsx')
+                            'Att Diff 75V page 1.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')

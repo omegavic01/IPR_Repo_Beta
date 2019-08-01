@@ -76,8 +76,8 @@ class _BaseIpamProcessing:
         """
         ea_updater = {}
         for key, value in data[0].items():
-            if isinstance(value, list):
-                ea_updater[key] = ', '.join(str(e) for e in value)
+            if isinstance(value, list) and value:
+                ea_updater[key] = ', '.join(str(e) for e in sorted(value))
         return ea_updater
 
     @staticmethod
@@ -359,6 +359,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
             (temp_df['network'] != '100.88.0.0/29') &
             (temp_df['network'] != '100.64.0.0/29') &
             (temp_df['network_view'] != 'Public-IP') &
+            (temp_df['network_view'] != 'CDSTEST') &
             (temp_df['network_view'] != 'IPR-HMB')]
         temp_df =temp_df[~temp_df['/Cidr'].isin(
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])]

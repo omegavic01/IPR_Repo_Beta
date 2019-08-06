@@ -422,11 +422,13 @@ def _get_view_index(views, ddi_data):
     """Takes a compiled list of views and assigns an index in a dictionary as
     indexed by the list of ddi data returned."""
     views_index_temp = {}
-    for view in views:
-        for enum, ddi_line in enumerate(ddi_data):
-            if view == ddi_line[0]['network_view']:
-                temp_dict = {view: enum}
-                views_index_temp.update(temp_dict)
+    for enum, ddi_line in enumerate(ddi_data):
+        if isinstance(ddi_line, dict):
+            # Updated for >5000 datasets.
+            continue
+        temp_dict = {ddi_line[0]['network_view']: enum}
+        views_index_temp.update(temp_dict)
+        continue
     return views_index_temp
 
 
@@ -893,6 +895,8 @@ def _get_views(data_lists):
     """Builds a set list of views from within src_ws"""
     views = []
     for data_list in data_lists:
+        if data_list[15] in ['IPR-HMB']:
+            continue
         views.append(data_list[15])
     return list(set(views))
 
@@ -959,6 +963,9 @@ def main():
             cleaning_data = data.row_values(row)
             if cleaning_data[1].strip() == '' and \
                     cleaning_data[15].strip() == '':
+                continue
+            # Ignore views:
+            if cleaning_data[15].strip() in ['IPR-HMB']:
                 continue
             # Capture lines that do not have a view listed. Sometimes add
             # dispostions do not have a view listed.  This will help populated.
@@ -1038,6 +1045,7 @@ def main():
     with open(ddi_data_file, 'rb') as file_in:
         ddi_data = pickle.load(file_in)
     # Build data extensions for later processing.
+
     views_index = _get_view_index(views, ddi_data)
     ddi_data = _get_rekey_ddi_data(ddi_data)
     ea_index = _get_ea_index()

@@ -274,3 +274,8 @@ class DataFileNames:
     def hold_my_beer_report():
         """Returns source filename for global addresses."""
         return 'hold_my_bear_report.xlsx'
+
+    @staticmethod
+    def master_df_filename():
+        """Returns source filename for global addresses."""
+        return 'master_df.pkl'

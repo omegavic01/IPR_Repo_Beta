@@ -279,3 +279,8 @@ class DataFileNames:
     def master_df_filename():
         """Returns source filename for global addresses."""
         return 'master_df.pkl'
+
+    @staticmethod
+    def free_space_df_filename():
+        """Returns source filename for global addresses."""
+        return 'free_space_df.pkl'

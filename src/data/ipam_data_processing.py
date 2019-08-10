@@ -555,79 +555,96 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 writer, sheet_name='Filt-Conflicting-VRF', index=True,
                 header=["Conflicting VRF's"], index_label='VRF #')
 
+        def _build_free_space_tab(main_dataset):
+
+            def find_free_space(start, end):
+                free_space = []
+                range_to_cidrs = netaddr.iprange_to_cidrs(start, end)
+
+                def compare_networks(range_to_cidrs_data):
+                    for inet in range_to_cidrs_data:
+                        if IPNetwork(inet) == IPNetwork(start) or IPNetwork(
+                                inet) == IPNetwork(end):
+                            continue
+                        elif IPNetwork(start) in IPNetwork(inet) and IPNetwork(
+                                end) in IPNetwork(inet):
+                            temp_ip_list = netaddr.cidr_exclude(
+                                IPNetwork(inet),
+                                IPNetwork(start))
+                            if IPNetwork(end) in temp_ip_list and len(
+                                    temp_ip_list) > 1:
+                                temp_ip_list.remove(IPNetwork(end))
+                                free_space.extend(temp_ip_list)
+                                continue
+                        elif IPNetwork(start) in IPNetwork(inet):
+                            free_space.extend(
+                                netaddr.cidr_exclude(IPNetwork(inet),
+                                                     IPNetwork(
+                                                         start)))
+                            continue
+                        elif IPNetwork(end) in IPNetwork(inet):
+                            free_space.extend(
+                                netaddr.cidr_exclude(IPNetwork(inet),
+                                                     IPNetwork(end)))
+                            continue
+                        else:
+                            free_space.append(IPNetwork(inet))
+                    return free_space
+
+                return compare_networks(range_to_cidrs)
+
+            # Free Space Check
+            free_space_small_df = main_dataset['IPv4 Subnet'].unique()
+            ipnetwork_addr = []
+            for addr in free_space_small_df:
+                ipnetwork_addr.append(addr)
+            cidr_merged_addresses_list = netaddr.cidr_merge(ipnetwork_addr)
+            merged_free_space = []
+            for enum, net in enumerate(cidr_merged_addresses_list):
+                if len(cidr_merged_addresses_list) == enum + 1:
+                    continue
+                temp_data = find_free_space(net,
+                                            cidr_merged_addresses_list[
+                                                enum + 1])
+                if temp_data:
+                    merged_free_space.extend(temp_data)
+            private_free_space = []
+            for i in merged_free_space:
+                if i.is_private():
+                    private_free_space.append(i)
+            # Convert to string repr
+            free_space_list_of_strings = []
+            for i in private_free_space:
+                ip = i.__str__()
+                split_subnet = ip.split('.')
+                split_cidr = split_subnet[3].split('/')
+                temp_subnet_list = (
+                    ip, int(split_subnet[0]), int(split_subnet[1]),
+                    int(split_subnet[2]), int(split_cidr[0]),
+                    int(split_cidr[1]))
+                free_space_list_of_strings.append(temp_subnet_list)
+
+            free_space_labels = [
+                'IPv4 Subnet', 'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4', 'Cidr']
+            free_space_df = pd.DataFrame.from_records(
+                free_space_list_of_strings,
+                columns=free_space_labels)
+            free_space_df = free_space_df.sort_values('Cidr', ascending=True)
+
+            free_space_df.to_excel(
+                writer, sheet_name='Summary_Free_Space', index=False)
+            self.writer_cls.write_to_pkl(
+                self.dir_cls.raw_dir(),
+                self.filename_cls.free_space_df_filename(),
+                free_space_df)
+
+        def _summary_forecast(_master_df):
+            pass
+
         _clear_vrf(vrf_dict)
         _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
-
-        def find_free_space(start, end):
-            free_space = []
-            range_to_cidrs = netaddr.iprange_to_cidrs(start, end)
-
-            def compare_networks(range_to_cidrs_data):
-                for inet in range_to_cidrs_data:
-                    if IPNetwork(inet) == IPNetwork(start) or IPNetwork(
-                            inet) == IPNetwork(end):
-                        continue
-                    elif IPNetwork(start) in IPNetwork(inet) and IPNetwork(
-                            end) in IPNetwork(inet):
-                        temp_ip_list = netaddr.cidr_exclude(IPNetwork(inet),
-                                                            IPNetwork(start))
-                        if IPNetwork(end) in temp_ip_list and len(
-                                temp_ip_list) > 1:
-                            temp_ip_list.remove(IPNetwork(end))
-                            free_space.extend(temp_ip_list)
-                            continue
-                    elif IPNetwork(start) in IPNetwork(inet):
-                        free_space.extend(netaddr.cidr_exclude(IPNetwork(inet),
-                                                               IPNetwork(
-                                                                   start)))
-                        continue
-                    elif IPNetwork(end) in IPNetwork(inet):
-                        free_space.extend(netaddr.cidr_exclude(IPNetwork(inet),
-                                                               IPNetwork(end)))
-                        continue
-                    else:
-                        free_space.append(IPNetwork(inet))
-                return free_space
-
-            return compare_networks(range_to_cidrs)
-
-        # Free Space Check
-        free_space_small_df = master_df['IPv4 Subnet'].unique()
-        ipnetwork_addr = []
-        for addr in free_space_small_df:
-            ipnetwork_addr.append(addr)
-        cidr_merged_addresses_list = netaddr.cidr_merge(ipnetwork_addr)
-        free_space = []
-        for enum, net in enumerate(cidr_merged_addresses_list):
-            if len(cidr_merged_addresses_list) == enum + 1:
-                continue
-            temp_data = find_free_space(net,
-                                        cidr_merged_addresses_list[enum + 1])
-            if temp_data:
-                free_space.extend(temp_data)
-        private_free_space = []
-        for i in free_space:
-            if i.is_private():
-                private_free_space.append(i)
-        # Convert to string repr
-        free_space_list_of_strings = []
-        for i in private_free_space:
-            ip = i.__str__()
-            split_subnet = ip.split('.')
-            split_cidr = split_subnet[3].split('/')
-            temp_subnet_list = (ip, int(split_subnet[0]), int(split_subnet[1]),
-                                int(split_subnet[2]), int(split_cidr[0]),
-                                int(split_cidr[1]))
-            free_space_list_of_strings.append(temp_subnet_list)
-
-        free_space_labels = [
-            'IPv4 Subnet', 'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4', 'Cidr']
-        free_space_df = pd.DataFrame.from_records(free_space_list_of_strings,
-                                                  columns=free_space_labels)
-        free_space_df = free_space_df.sort_values('Cidr', ascending=True)
-
-        free_space_df.to_excel(
-            writer, sheet_name='Summary_Free_Space', index=False)
+        _build_free_space_tab(master_df)
+        _summary_forecast(master_df)
 
         self._tweak_and_save_workbook(writer)
 

@@ -231,6 +231,11 @@ class DataFileNames:
         return 'Summary - Report by percent-BLANK.xlsx'
 
     @staticmethod
+    def percent_blank_forecast_filename():
+        """Returns filename for networkcontainers filename."""
+        return 'Summary Forecast - Report by percent-BLANK.xlsx'
+
+    @staticmethod
     def vrf_to_agency_filename():
         """Returns filename for vrf to agency dictionary filename."""
         return 'vrf_to_agency_dict.pkl'

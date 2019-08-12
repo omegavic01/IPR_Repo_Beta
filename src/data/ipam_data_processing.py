@@ -91,6 +91,30 @@ class _BaseIpamProcessing:
             source_data.at[key, ea_att] = value
         return source_data
 
+    def oct_list(self):
+        return ['Oc-1', 'Oc-2', 'Oc-3', 'Oc-4', '/Cidr']
+
+    def split_out_network(self, dataframe, column_to_split):
+        oct_listed = self.oct_list()
+        network_col = dataframe[column_to_split].str.split(".", expand=True)
+        dataframe[oct_listed[0]] = network_col[0].astype(str).astype(int)
+        dataframe[oct_listed[1]] = network_col[1].astype(str).astype(int)
+        dataframe[oct_listed[2]] = network_col[2].astype(str).astype(int)
+        split_third_value = network_col[3].str.split("/", expand=True)
+        dataframe[oct_listed[3]] = split_third_value[0].astype(str).astype(int)
+        dataframe[oct_listed[4]] = split_third_value[1].astype(str).astype(int)
+        return dataframe
+
+    def sort_df_by_oct_list(self, df):
+        return df.sort_values(
+            self.oct_list(), ascending=[True, True, True, True, True]
+        )
+
+    def reindex_df(self, df):
+        df.index = range(len(df.index))
+        df.index += 10000
+        return df
+
 
 class IpamDataInterim(_BaseIpamProcessing):
     """Class to read in networks and networkcontainers to then be smashed,
@@ -164,8 +188,7 @@ class IpamDataInterim(_BaseIpamProcessing):
         updater_dcdata = self.get_listed_values(dc_data)
         return self.put_listed_values(updater_dcdata, data, ea_value)
 
-    @staticmethod
-    def panda_processing_of_flattened_data(raw_nets):
+    def panda_processing_of_flattened_data(self, raw_nets):
         """Turns the returned flat dict into a panda dataframe.
 
         Further processing:
@@ -184,14 +207,7 @@ class IpamDataInterim(_BaseIpamProcessing):
             '/', expand=True)[0]
 
         # Further processing Line 2.
-        oct_list = ['Oc-1', 'Oc-2', 'Oc-3', 'Oc-4', '/Cidr']
-        network_col = net_flat_df['network'].str.split(".", expand=True)
-        net_flat_df[oct_list[0]] = network_col[0].astype(str).astype(int)
-        net_flat_df[oct_list[1]] = network_col[1].astype(str).astype(int)
-        net_flat_df[oct_list[2]] = network_col[2].astype(str).astype(int)
-        split_third_value = network_col[3].str.split("/", expand=True)
-        net_flat_df[oct_list[3]] = split_third_value[0].astype(str).astype(int)
-        net_flat_df[oct_list[4]] = split_third_value[1].astype(str).astype(int)
+        net_flat_df = self.split_out_network(net_flat_df, 'network')
 
         # Further processesing Line 3.
         network_col = net_flat_df['network'].str.split("/", expand=True)
@@ -199,13 +215,10 @@ class IpamDataInterim(_BaseIpamProcessing):
         net_flat_df['IP Cidr'] = network_col[1].astype(str).astype(int)
 
         # Further processing Line 4.
-        net_flat_df = net_flat_df.sort_values(
-            oct_list, ascending=[True, True, True, True, True]
-        )
+        net_flat_df = self.sort_df_by_oct_list(net_flat_df)
 
         # Further processing Line 5.
-        net_flat_df.index = range(len(net_flat_df.index))
-        net_flat_df.index += 10000
+        net_flat_df = self.reindex_df(net_flat_df)
         return net_flat_df
 
 
@@ -229,9 +242,11 @@ class IpamDataProcessed(_BaseIpamProcessing):
     @staticmethod
     def _tweak_and_save_workbook(write):
         workbook = write.book
-        worksheet = write.sheets['Summary']
+        worksheet_summary = write.sheets['Summary']
+        worksheet_summary_forecast = write.sheets['Summary Forecast']
         left = workbook.add_format({'align': 'left'})
-        worksheet.set_column('W:Y', None, left)
+        worksheet_summary.set_column('W:Y', None, left)
+        worksheet_summary_forecast.set_column('W:Y', None, left)
         write.save()
 
     @staticmethod
@@ -347,6 +362,50 @@ class IpamDataProcessed(_BaseIpamProcessing):
                     print(item)
         return m_dict_overlap, m_dict_conflict
 
+    def _update_df_conflict_overlap_data(self, overlaps, conflicts, dataframe):
+        dataframe['Conflict Subnet Overlap - Index No.'] = ''
+        dataframe['Conflict Subnet - Index No.'] = ''
+        dataframe['No Overlap'] = ''
+        dataframe['No Conflict'] = ''
+        dataframe['Conflict Subnet Overlap - Count'] = ''
+        dataframe['Conflict Subnet - Count'] = ''
+        for row in dataframe.index.values:
+            if overlaps[dataframe.loc[row, 'IPv4 Subnet']]:
+                if len(overlaps[dataframe.loc[row, 'IPv4 Subnet']]) > 1:
+                    dataframe.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        ', '.join(str(e) for e in overlaps[
+                            dataframe.loc[row, 'IPv4 Subnet']])
+                    dataframe.loc[
+                        row, 'Conflict Subnet Overlap - Count'] = \
+                        len(overlaps[dataframe.loc[row, 'IPv4 Subnet']])
+                else:
+                    dataframe.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        overlaps[dataframe.loc[row, 'IPv4 Subnet']][0]
+                    dataframe.loc[row, 'Conflict Subnet Overlap - Count'] = 1
+                dataframe.loc[row, 'No Overlap'] = 'NO'
+            else:
+                dataframe.loc[row, 'No Overlap'] = 'YES'
+            if len(conflicts[dataframe.loc[row, 'IPv4 Subnet']]) > 2:
+                temp_list = conflicts[
+                    dataframe.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                dataframe.loc[row, 'Conflict Subnet - Index No.'] = \
+                    ', '.join(str(e) for e in temp_list)
+                dataframe.loc[row, 'No Conflict'] = 'NO'
+                dataframe.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
+            elif len(conflicts[dataframe.loc[row, 'IPv4 Subnet']]) == 2:
+                temp_list = conflicts[
+                    dataframe.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                dataframe.loc[row, 'Conflict Subnet - Index No.'] = \
+                    temp_list[0]
+                dataframe.loc[row, 'No Conflict'] = 'NO'
+                dataframe.loc[row, 'Conflict Subnet - Count'] = 1
+            else:
+                dataframe.loc[row, 'No Conflict'] = 'YES'
+
     def master_and_uncategorized_sheet_processing(self, master_data):
         """This method takes a copy of the full dataframe.  Processes it and
         returns the mashed data for writing the Master Sheet and Uncategorized
@@ -362,7 +421,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
             (temp_df['network_view'] != 'Public-IP') &
             (temp_df['network_view'] != 'CDSTEST') &
             (temp_df['network_view'] != 'IPR-HMB')]
-        temp_df =temp_df[~temp_df['/Cidr'].isin(
+        temp_df = temp_df[~temp_df['/Cidr'].isin(
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
@@ -415,49 +474,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
         # Performs Conflict and Overlap Check
         master_overlaps, master_conflicts = \
             self._conflict_overlap_check(master_df)
-        master_df['Conflict Subnet Overlap - Index No.'] = ''
-        master_df['Conflict Subnet - Index No.'] = ''
-        master_df['No Overlap'] = ''
-        master_df['No Conflict'] = ''
-        master_df['Conflict Subnet Overlap - Count'] = ''
-        master_df['Conflict Subnet - Count'] = ''
-        for row in master_df.index.values:
-            if master_overlaps[master_df.loc[row, 'IPv4 Subnet']]:
-                if len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']]) > 1:
-                    master_df.loc[
-                        row, 'Conflict Subnet Overlap - Index No.'] = \
-                        ', '.join(str(e) for e in master_overlaps[
-                            master_df.loc[row, 'IPv4 Subnet']])
-                    master_df.loc[
-                        row, 'Conflict Subnet Overlap - Count'] = \
-                        len(master_overlaps[master_df.loc[row, 'IPv4 Subnet']])
-                else:
-                    master_df.loc[
-                        row, 'Conflict Subnet Overlap - Index No.'] = \
-                        master_overlaps[master_df.loc[row, 'IPv4 Subnet']][0]
-                    master_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
-                master_df.loc[row, 'No Overlap'] = 'NO'
-            else:
-                master_df.loc[row, 'No Overlap'] = 'YES'
-            if len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) > 2:
-                temp_list = master_conflicts[
-                    master_df.loc[row, 'IPv4 Subnet']].copy()
-                temp_list.remove(row + 10001)
-                master_df.loc[row, 'Conflict Subnet - Index No.'] = \
-                    ', '.join(str(e) for e in temp_list)
-                master_df.loc[row, 'No Conflict'] = 'NO'
-                master_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
-            elif len(master_conflicts[master_df.loc[row, 'IPv4 Subnet']]) == 2:
-                temp_list = master_conflicts[
-                    master_df.loc[row, 'IPv4 Subnet']].copy()
-                temp_list.remove(row + 10001)
-                master_df.loc[row, 'Conflict Subnet - Index No.'] = \
-                    temp_list[0]
-                master_df.loc[row, 'No Conflict'] = 'NO'
-                master_df.loc[row, 'Conflict Subnet - Count'] = 1
-            else:
-                master_df.loc[row, 'No Conflict'] = 'YES'
-
+        self._update_df_conflict_overlap_data(master_overlaps,
+                                              master_conflicts,
+                                              master_df)
         return master_df, uncategorized_df
 
     def panda_processing_of_interim_data(self, interim_data):
@@ -638,13 +657,255 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 self.filename_cls.free_space_df_filename(),
                 free_space_df)
 
-        def _summary_forecast(_master_df):
-            pass
+        def _confliction_data_processing(old_ip_data,
+                                         new_ip_data,
+                                         no_conflict_df):
+            labels = no_conflict_df.columns.values.tolist()
+            new_ip_data_df = pd.DataFrame(new_ip_data, columns=labels)
+            forecast_ip_df = pd.concat([new_ip_data_df, no_conflict_df],
+                                       ignore_index=True)
+            forecast_ip_df = forecast_ip_df.drop(
+                forecast_ip_df.columns[17:],
+                axis=1)
+            forecast_ip_df = self.split_out_network(
+                forecast_ip_df,
+                'IPv4 Subnet')
+            forecast_ip_df = self.sort_df_by_oct_list(forecast_ip_df)
+            forecast_ip_df = self.reindex_df(forecast_ip_df)
+            forecast_ip_df['Index'] = forecast_ip_df.index + 1
+            forecast_overlaps, forecast_conflicts = \
+                self._conflict_overlap_check(forecast_ip_df)
+            self._update_df_conflict_overlap_data(forecast_overlaps,
+                                                  forecast_conflicts,
+                                                  forecast_ip_df)
+            forecast_ip_df.to_excel(writer, sheet_name='Summary Forecast',
+                                    index=False)
+            print('Keep Going!')
+
+        def _summary_forecast():
+
+            def get_free_space_dataset(free_space_dataset):
+                # Logic for the free space initial compilation.
+                free_apac_subnets = []
+                free_emea_subnets = []
+                free_latam_subnets = []
+                free_na_subnets = []
+                apac_subnet = netaddr.IPNetwork('10.224.0.0/12')
+                emea_subnet = netaddr.IPNetwork('10.128.0.0/11')
+                latam_subnet = netaddr.IPNetwork('10.240.0.0/13')
+                na_subnet = netaddr.IPNetwork('10.192.0.0/11')
+                region_subnet_list = [apac_subnet, emea_subnet, latam_subnet,
+                                      na_subnet]
+                free_region_subnet_list = [free_apac_subnets,
+                                           free_emea_subnets,
+                                           free_latam_subnets, free_na_subnets]
+                for enum, region_subnet in enumerate(region_subnet_list):
+                    for free_space_list in free_space_dataset:
+                        if netaddr.IPNetwork(
+                                free_space_list[0]) in region_subnet and \
+                                        free_space_list[5] <= 22:
+                            free_region_subnet_list[enum].append(
+                                free_space_list)
+                regional_dictionary = {
+                    'EMEA': [emea_subnet, free_emea_subnets],
+                    'NA': [na_subnet, free_na_subnets],
+                    'APAC': [apac_subnet, free_apac_subnets],
+                    'LATAM': [latam_subnet, free_latam_subnets]}
+                return regional_dictionary
+
+            def convert_df_to_nested_array(dataset):
+                return dataset.values.tolist()
+
+            def get_conflicted_data(master_dataset_df):
+                conflicted_df = master_dataset_df[
+                    master_dataset_df['No Conflict'].str.contains('NO')]
+                non_conflict_df = master_dataset_df[
+                    ~master_dataset_df['No Conflict'].str.contains('NO')]
+                conflict_idx = list(conflicted_df).index('No Conflict')
+                iprd_idx = list(conflicted_df).index('IPR D')
+                comment_idx = list(conflicted_df).index('Comment')
+                region_idx = list(conflicted_df).index('RGN')
+                cidr_idx = list(conflicted_df).index('/Cidr')
+                conflicted_lt = convert_df_to_nested_array(conflicted_df)
+                return conflicted_lt, iprd_idx, conflict_idx, \
+                    region_idx, cidr_idx, comment_idx, non_conflict_df
+
+            def get_master_df():
+                return self.reader_cls.read_from_pkl(
+                    self.dir_cls.raw_dir(),
+                    self.filename_cls.master_df_filename())
+
+            def get_free_space_df():
+                return self.reader_cls.read_from_pkl(
+                    self.dir_cls.raw_dir(),
+                    self.filename_cls.free_space_df_filename())
+
+            def get_subnet_ratio(conflict_cidr):
+                subnet_ratio = {ipr_index: 19, 17: 20, 18: 20, 19: 21, 20: 21,
+                                21: 21, 22: 22}
+                if conflict_cidr in subnet_ratio:
+                    return subnet_ratio[conflict_cidr]
+                if 24 >= conflict_cidr > 22:
+                    return int(subnet_ratio[22])
+                else:
+                    return 'Out of Range.'
+
+            def get_new_subnet(new_cidr, region):
+
+                def get_next_subnet():
+                    return regional_free_space_dataset[region][1][0][0]
+
+                def pop_get_next_subnet():
+                    regional_free_space_dataset[region][1].pop(0)
+
+                def update_regional_free_space_dataset_list(updated_list):
+                    regional_free_space_dataset[region][2] = updated_list
+
+                def cidr_merge_inuse_subnets(free_space_subnetted_list):
+                    return netaddr.cidr_merge(free_space_subnetted_list)
+
+                def region_subnets_in_use_dont_cover_needed_range():
+                    regional_free_space_dataset[region][2].append(
+                        get_next_subnet())
+                    pop_get_next_subnet()
+
+                def return_active_region_subnets_in_use():
+                    if len(regional_free_space_dataset[region]) < 3:
+                        regional_free_space_dataset[region].extend(
+                            [[get_next_subnet()]])
+                        pop_get_next_subnet()
+                        return regional_free_space_dataset[region][2]
+                    if len(regional_free_space_dataset[region]) == 3 and \
+                            regional_free_space_dataset[region][2]:
+                        return regional_free_space_dataset[region][2]
+                    if len(regional_free_space_dataset[region]) == 3:
+                        regional_free_space_dataset[region][2] = [
+                            get_next_subnet()]
+                        pop_get_next_subnet()
+                        return regional_free_space_dataset[region][2]
+
+                def new_subnet():
+                    in_use_subnets = return_active_region_subnets_in_use()
+                    if len(in_use_subnets) == 1:
+                        temp_subnetted_list = list(
+                            netaddr.IPNetwork(in_use_subnets[0]).subnet(
+                                new_cidr))
+                        if not temp_subnetted_list:
+                            region_subnets_in_use_dont_cover_needed_range()
+                            return 'Re-Run'
+                        returning_subnet = temp_subnetted_list[0]
+                        new_in_use_subnet_list = \
+                            cidr_merge_inuse_subnets(temp_subnetted_list[1:])
+                        update_regional_free_space_dataset_list(
+                            new_in_use_subnet_list)
+                        return returning_subnet
+                    else:
+                        for enum, subnet in enumerate(in_use_subnets):
+                            if list(netaddr.IPNetwork(subnet).subnet(
+                                    new_cidr)):
+                                temp_subnetted_list = list(
+                                    netaddr.IPNetwork(subnet).subnet(new_cidr))
+                                if len(temp_subnetted_list) == 1:
+                                    in_use_subnets.pop(enum)
+                                    new_in_use_subnet_list = \
+                                        cidr_merge_inuse_subnets(
+                                            in_use_subnets)
+                                    update_regional_free_space_dataset_list(
+                                        new_in_use_subnet_list)
+                                    return temp_subnetted_list[0]
+                                elif len(temp_subnetted_list) > 1:
+                                    returning_subnet = temp_subnetted_list.pop(
+                                        0)
+                                    in_use_subnets.pop(enum)
+                                    new_in_use_subnet_list = \
+                                        temp_subnetted_list + in_use_subnets
+                                    update_regional_free_space_dataset_list(
+                                        new_in_use_subnet_list)
+                                    return returning_subnet
+                        # If a no good subnet was not identified.
+                        region_subnets_in_use_dont_cover_needed_range()
+                        return 'Re-Run'
+
+                return new_subnet()
+
+            def clean_conflict(dirty_cidr, dirty_cidr_region):
+                new_cidr = get_subnet_ratio(dirty_cidr)
+                if not isinstance(new_cidr, int):
+                    return False
+                new_subnet = get_new_subnet(new_cidr,
+                                            dirty_cidr_region).__str__()
+                if new_subnet == 'Re-Run':
+                    new_subnet = get_new_subnet(new_cidr,
+                                                dirty_cidr_region).__str__()
+                return new_subnet
+
+            # Reads in master_df.pkl.
+            master_ip_df = get_master_df()
+            # Builds the conflict dataset
+            conflicted_list, ipr_index, conflict_index, region_index, \
+                cidr_index, comment_index, non_conflicted_df = \
+                get_conflicted_data(master_ip_df)
+            # Reads in free_space_df.pkl
+            regional_free_space_dataset = get_free_space_dataset(
+                convert_df_to_nested_array(get_free_space_df()))
+            # Update old array with new array data and build new array
+            # while at it.
+            old_data = []
+            new_data = []
+            errored_data = []
+            for dirty_subnet in conflicted_list:
+                if 'nan' == dirty_subnet[region_index].__repr__():
+                    errored_data.append(dirty_subnet)
+                    continue
+                new_subnet_record = clean_conflict(dirty_subnet[cidr_index],
+                                                   dirty_subnet[region_index])
+                if not new_subnet_record:
+                    errored_data.append(dirty_subnet)
+                    continue
+                # List comprehension for cleaning up pandas conversion.
+                dirty_subnet_for_record = \
+                    ['' if 'nan' == x.__repr__() else x for x in dirty_subnet]
+                new_ipr_record = dirty_subnet_for_record[:]
+                new_ipr_record[1] = new_subnet_record
+                # IPR D Update
+                if new_ipr_record[ipr_index] and 'assigned' not in \
+                        new_ipr_record[ipr_index]:
+                    new_ipr_record[ipr_index] = \
+                        new_ipr_record[ipr_index] + ', assigned'
+                else:
+                    new_ipr_record[ipr_index] = 'assigned'
+                if dirty_subnet_for_record[ipr_index] and 'followup' not in \
+                        dirty_subnet_for_record[ipr_index]:
+                    dirty_subnet_for_record[ipr_index] = \
+                        dirty_subnet_for_record[ipr_index] + ', followup'
+                else:
+                    dirty_subnet_for_record[ipr_index] = 'followup'
+                # Comment Update
+                if new_ipr_record[comment_index]:
+                    new_ipr_record[comment_index] = \
+                        new_ipr_record[comment_index] + \
+                        ' | replacing ' + dirty_subnet[1] + " |"
+                else:
+                    new_ipr_record[comment_index] = \
+                        '| replacing ' + dirty_subnet[1] + " |"
+                if dirty_subnet_for_record[comment_index]:
+                    dirty_subnet_for_record[comment_index] = \
+                        dirty_subnet_for_record[comment_index] + \
+                        ' | replaced by ' + new_subnet_record.__str__() + ' |'
+                else:
+                    dirty_subnet_for_record[comment_index] = \
+                        '| replaced by ' + new_subnet_record.__str__() + ' |'
+                old_data.append(dirty_subnet_for_record)
+                new_data.append(new_ipr_record)
+            return old_data, new_data, non_conflicted_df
 
         _clear_vrf(vrf_dict)
         _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
         _build_free_space_tab(master_df)
-        _summary_forecast(master_df)
+        old_ip_data, new_ip_data, non_conflicted_ip_df = _summary_forecast()
+        _confliction_data_processing(old_ip_data,
+                                     new_ip_data,
+                                     non_conflicted_ip_df)
 
         self._tweak_and_save_workbook(writer)
 

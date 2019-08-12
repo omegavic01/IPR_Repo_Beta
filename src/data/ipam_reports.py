@@ -45,7 +45,7 @@ class IpamReports:
         return datetime_object.strftime('%Y%m%d')
 
     @staticmethod
-    def _copy_data_over(source, template, final):
+    def _copy_data_over(source, template, final, sheet_name):
         """Reference to the site that was used for the below for loop:
 
         URL:
@@ -53,7 +53,7 @@ class IpamReports:
         sheet-to-another-workbook-in-python
         """
         source_wb = openpyxl.load_workbook(filename=source)
-        source_ws = source_wb.worksheets[0]
+        source_ws = source_wb[sheet_name]
         template_wb = openpyxl.load_workbook(filename=template)
         template_ws = template_wb.worksheets[1]
         for row in source_ws:
@@ -105,4 +105,22 @@ class IpamReports:
             self.reports_dir + '\\' + percent_report_with_date_filename
         self._copy_data_over(self.ipam_to_ipr_xlsx,
                              percent_blank_xlsx,
-                             percent_report_with_date_filename_and_path)
+                             percent_report_with_date_filename_and_path,
+                             'Summary')
+
+    def generate_forecast_percent_report(self):
+        """Generates IPR_Forecast_Percent report xlsx file for IPR."""
+        percent_blank_forecast_filename = \
+            self.data_filename_cls.percent_blank_forecast_filename()
+        percent_blank_xlsx = self.process_dir + '\\' + \
+            percent_blank_forecast_filename
+        percent_forecast_report_with_date_filename = \
+            self._create_new_percent_file_name_with_date_added(
+                self.date, percent_blank_forecast_filename)
+        percent_forecast_report_with_date_filename_and_path = \
+            self.reports_dir + '\\' + \
+            percent_forecast_report_with_date_filename
+        self._copy_data_over(self.ipam_to_ipr_xlsx,
+                             percent_blank_xlsx,
+                        percent_forecast_report_with_date_filename_and_path,
+                             'Summary Forecast')

@@ -11,7 +11,7 @@ import netaddr
 # Initialize Classes
 dir_cls = DirectoryValues()
 env_cls = EnvironmentValues()
-ddi_filenames_cls = DataFileNames
+filename_cls = DataFileNames
 reader_cls = Reader()
 
 
@@ -58,18 +58,18 @@ def _summary_forecast():
 
     def get_master_df():
         return reader_cls.read_from_pkl(dir_cls.raw_dir(),
-                                        ddi_filenames_cls.master_df_filename())
+                                        filename_cls.master_df_filename())
 
     def get_free_space_df():
         return reader_cls.read_from_pkl(dir_cls.raw_dir(),
-                                        ddi_filenames_cls.free_space_df_filename())
+                                        filename_cls.free_space_df_filename())
 
     def get_subnet_ratio(conflict_cidr):
         subnet_ratio = {ipr_index: 19, 17: 20, 18: 20, 19: 21, 20: 21, 21: 21, 22: 22}
         if conflict_cidr in subnet_ratio:
             return subnet_ratio[conflict_cidr]
         if 24 >= conflict_cidr > 22:
-            return subnet_ratio[22]
+            return int(subnet_ratio[22])
         else:
             return 'Out of Range.'
 
@@ -82,37 +82,74 @@ def _summary_forecast():
             regional_free_space_dataset[region][1].pop(0)
 
         def update_regional_free_space_dataset_list(updated_list):
-            pass
+            regional_free_space_dataset[region][2] = updated_list
 
-        def clean_inuse_subnets(free_space_subnetted_list):
+        def cidr_merge_inuse_subnets(free_space_subnetted_list):
             return netaddr.cidr_merge(free_space_subnetted_list)
+
+        def region_subnets_in_use_dont_cover_needed_range():
+            regional_free_space_dataset[region][2].append(get_next_subnet())
+            pop_get_next_subnet()
 
         def return_active_region_subnets_in_use():
             if len(regional_free_space_dataset[region]) < 3:
                 regional_free_space_dataset[region].extend([[get_next_subnet()]])
                 pop_get_next_subnet()
                 return regional_free_space_dataset[region][2]
+            if len(regional_free_space_dataset[region]) == 3 and \
+                    regional_free_space_dataset[region][2]:
+                return regional_free_space_dataset[region][2]
             if len(regional_free_space_dataset[region]) == 3:
+                regional_free_space_dataset[region][2] = [get_next_subnet()]
+                pop_get_next_subnet()
                 return regional_free_space_dataset[region][2]
 
         def new_subnet():
             in_use_subnets = return_active_region_subnets_in_use()
-            for subnet in in_use_subnets:
-                if list(netaddr.IPNetwork(subnet).subnet(new_cidr)):
-                    temp_subnetted_list = list(
-                        netaddr.IPNetwork(subnet).subnet(new_cidr))
-                    returning_subnet = temp_subnetted_list[0]
-                    regional_free_space_dataset[region][2] = \
-                        clean_inuse_subnets(temp_subnetted_list[1:])
-                    return returning_subnet
+            if len(in_use_subnets) == 1:
+                temp_subnetted_list = list(
+                    netaddr.IPNetwork(in_use_subnets[0]).subnet(new_cidr))
+                if not temp_subnetted_list:
+                    region_subnets_in_use_dont_cover_needed_range()
+                    return 'Re-Run'
+                returning_subnet = temp_subnetted_list[0]
+                new_in_use_subnet_list = \
+                    cidr_merge_inuse_subnets(temp_subnetted_list[1:])
+                update_regional_free_space_dataset_list(new_in_use_subnet_list)
+                return returning_subnet
+            else:
+                for enum, subnet in enumerate(in_use_subnets):
+                    if list(netaddr.IPNetwork(subnet).subnet(new_cidr)):
+                        temp_subnetted_list = list(
+                            netaddr.IPNetwork(subnet).subnet(new_cidr))
+                        if len(temp_subnetted_list) == 1:
+                            in_use_subnets.pop(enum)
+                            new_in_use_subnet_list = cidr_merge_inuse_subnets(
+                                in_use_subnets)
+                            update_regional_free_space_dataset_list(
+                                new_in_use_subnet_list)
+                            return temp_subnetted_list[0]
+                        elif len(temp_subnetted_list) > 1:
+                            returning_subnet = temp_subnetted_list.pop(0)
+                            in_use_subnets.pop(enum)
+                            new_in_use_subnet_list = temp_subnetted_list + \
+                                in_use_subnets
+                            update_regional_free_space_dataset_list(
+                                new_in_use_subnet_list)
+                            return returning_subnet
+                # If a no good subnet was not identified.
+                region_subnets_in_use_dont_cover_needed_range()
+                return 'Re-Run'
 
         return new_subnet()
 
     def clean_conflict(dirty_cidr, dirty_cidr_region):
         new_cidr = get_subnet_ratio(dirty_cidr)
         if not isinstance(new_cidr, int):
-            return 'Not in scope subnet cidr'
-        new_subnet = get_new_subnet(new_cidr, dirty_cidr_region)
+            return False
+        new_subnet = get_new_subnet(new_cidr, dirty_cidr_region).__str__()
+        if new_subnet == 'Re-Run':
+            new_subnet = get_new_subnet(new_cidr, dirty_cidr_region).__str__()
         return new_subnet
 
     # Reads in master_df.pkl.
@@ -135,6 +172,9 @@ def _summary_forecast():
             continue
         new_subnet_record = clean_conflict(dirty_subnet[cidr_index],
                                            dirty_subnet[region_index])
+        if not new_subnet_record:
+            errored_data.append(dirty_subnet)
+            continue
         # List comprehension for cleaning up pandas conversion.
         dirty_subnet_for_record = \
             ['' if 'nan' == x.__repr__() else x for x in dirty_subnet]

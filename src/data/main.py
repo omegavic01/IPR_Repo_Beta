@@ -2,7 +2,6 @@ from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
 from ipam_data_processing import IpamDataInterim, IpamDataProcessed
 from ipam_reports import IpamReports
-from ipam_report_forecast import IpamForecastReports
 from builder import DirectoryValues
 from builder import DataFileNames
 from builder import Reader
@@ -59,11 +58,12 @@ if run_ipam_data_processing_processed:
                            data_filenames_cls.ipam_dump_interim_panda()))
 
 
-run_ipam_reports = False
+run_ipam_reports = True
 if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()
     ipam_reports.generate_percent_report()
+    ipam_reports.generate_forecast_percent_report()
 
 """Good place to debug network data from a network view.
 """

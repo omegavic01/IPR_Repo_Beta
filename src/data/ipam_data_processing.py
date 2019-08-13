@@ -671,8 +671,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 forecast_ip_df,
                 'IPv4 Subnet')
             forecast_ip_df = self.sort_df_by_oct_list(forecast_ip_df)
-            forecast_ip_df = self.reindex_df(forecast_ip_df)
-            forecast_ip_df['Index'] = forecast_ip_df.index + 1
+            forecast_ip_df = forecast_ip_df.reset_index()
+            del forecast_ip_df['index']
+            forecast_ip_df['Index'] = forecast_ip_df.index + 10001
             forecast_overlaps, forecast_conflicts = \
                 self._conflict_overlap_check(forecast_ip_df)
             self._update_df_conflict_overlap_data(forecast_overlaps,
@@ -718,9 +719,14 @@ class IpamDataProcessed(_BaseIpamProcessing):
 
             def get_conflicted_data(master_dataset_df):
                 conflicted_df = master_dataset_df[
-                    master_dataset_df['No Conflict'].str.contains('NO')]
-                non_conflict_df = master_dataset_df[
-                    ~master_dataset_df['No Conflict'].str.contains('NO')]
+                    (master_dataset_df['No Conflict'] == 'NO') &
+                    (~master_dataset_df['DDI View'].
+                     str.contains('CDS-HUB', na=False)) &
+                    (~master_dataset_df['DDI View'].
+                     str.contains('00555', na=False)) &
+                    (~master_dataset_df['DDI View'].
+                     str.contains('00324', na=False))]
+                non_conflict_df = master_dataset_df.drop(conflicted_df.index)
                 conflict_idx = list(conflicted_df).index('No Conflict')
                 iprd_idx = list(conflicted_df).index('IPR D')
                 comment_idx = list(conflicted_df).index('Comment')

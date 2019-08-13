@@ -931,9 +931,12 @@ def main():
     processed_data_path = os.path.join(PROJECT_DIR, 'data', 'processed')
     reports_data_path = os.path.join(PROJECT_DIR, 'reports')
 
+    # What do you want to do:
+    ddi_api_call = False
+
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'Att Diff 75V page 1.xlsx')
+                            '20190722 je full modded.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')
@@ -1036,7 +1039,7 @@ def main():
     views = _get_views(src_data)
 
     # Update to True if a fresh set of data is needed from ddi.
-    ddi_api_call = False
+
     if ddi_api_call:
         logger.info('ddi_api_call has been set to True.  Querying DDI.')
         get_ddi_ip_data(views, ea_data_file, ddi_data_file, logger)

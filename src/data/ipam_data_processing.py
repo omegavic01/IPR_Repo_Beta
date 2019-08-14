@@ -679,6 +679,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
             self._update_df_conflict_overlap_data(forecast_overlaps,
                                                   forecast_conflicts,
                                                   forecast_ip_df)
+            forecast_ip_df.to_pickle(self.dir_cls.raw_dir() + '/' +
+                                     self.filename_cls.
+                                     conflict_free_df_filename())
             forecast_ip_df.to_excel(writer, sheet_name='Summary Forecast',
                                     index=False)
             print('Keep Going!')

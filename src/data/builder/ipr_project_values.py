@@ -289,3 +289,8 @@ class DataFileNames:
     def free_space_df_filename():
         """Returns source filename for global addresses."""
         return 'free_space_df.pkl'
+
+    @staticmethod
+    def conflict_free_df_filename():
+        """Returns source filename for global addresses."""
+        return 'conflict_free_df.pkl'

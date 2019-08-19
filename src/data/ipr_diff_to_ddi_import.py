@@ -501,6 +501,11 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 else:
                     import_add.append(add_or_del_row)
                     continue
+#            else:
+#                if add_or_del_row[1] not in \
+#                        ddi_data[views_index[add_or_del_row[15]]] and \
+#                        'del' not in add_or_del_row[0]:
+#                    import_add.append(add_or_del_row)
 
             # delete check
             if 'del' in add_or_del_row[0] and add_or_del_row[1] in \
@@ -936,7 +941,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            '20190722 je full modded.xlsx')
+                            '20190815 full modded - Copy - Copy.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')

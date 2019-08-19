@@ -660,6 +660,12 @@ class IpamDataProcessed(_BaseIpamProcessing):
         def _non_confliction_data_processing(new_ip_data, no_conflict_df):
             labels = no_conflict_df.columns.values.tolist()
             new_ip_data_df = pd.DataFrame(new_ip_data, columns=labels)
+            cleaned_new_ip_data_df = new_ip_data_df.drop(
+                new_ip_data_df.columns[17:],
+                axis=1)
+            cleaned_new_ip_data_df.to_excel(writer,
+                                            sheet_name='Forecast Add Updates',
+                                            index=False)
             forecast_ip_df = pd.concat([new_ip_data_df, no_conflict_df],
                                        ignore_index=True)
             forecast_ip_df = forecast_ip_df.drop(
@@ -682,7 +688,12 @@ class IpamDataProcessed(_BaseIpamProcessing):
                                      conflict_free_df_filename())
             forecast_ip_df.to_excel(writer, sheet_name='Summary Forecast',
                                     index=False)
-            print('Keep Going!')
+
+        def _confliction_data_processing(old_ip_data, no_conflict_df):
+            labels = no_conflict_df.columns.values.tolist()
+            old_ip_data_df = pd.DataFrame(old_ip_data, columns=labels)
+            old_ip_data_df.to_excel(writer, sheet_name='Needs Updating',
+                                    index=False)
 
         def _summary_forecast():
 
@@ -733,9 +744,11 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 comment_idx = list(conflicted_df).index('Comment')
                 region_idx = list(conflicted_df).index('RGN')
                 cidr_idx = list(conflicted_df).index('/Cidr')
+                disposition_idx = list(conflicted_df).index('Disposition')
                 conflicted_lt = convert_df_to_nested_array(conflicted_df)
                 return conflicted_lt, iprd_idx, conflict_idx, \
-                    region_idx, cidr_idx, comment_idx, non_conflict_df
+                    region_idx, cidr_idx, comment_idx, non_conflict_df, \
+                    disposition_idx
 
             def get_master_df():
                 return self.reader_cls.read_from_pkl(
@@ -850,7 +863,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
             master_ip_df = get_master_df()
             # Builds the conflict dataset
             conflicted_list, ipr_index, conflict_index, region_index, \
-                cidr_index, comment_index, non_conflicted_df = \
+                cidr_index, comment_index, non_conflicted_df, \
+                disposition_index = \
                 get_conflicted_data(master_ip_df)
             # Reads in free_space_df.pkl
             regional_free_space_dataset = get_free_space_dataset(
@@ -879,8 +893,10 @@ class IpamDataProcessed(_BaseIpamProcessing):
                         new_ipr_record[ipr_index]:
                     new_ipr_record[ipr_index] = \
                         new_ipr_record[ipr_index] + ', assigned'
+                    new_ipr_record[disposition_index] = 'add'
                 else:
                     new_ipr_record[ipr_index] = 'assigned'
+                    new_ipr_record[disposition_index] = 'add'
                 if dirty_subnet_for_record[ipr_index] and 'followup' not in \
                         dirty_subnet_for_record[ipr_index]:
                     dirty_subnet_for_record[ipr_index] = \
@@ -910,9 +926,10 @@ class IpamDataProcessed(_BaseIpamProcessing):
         _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
         _build_free_space_tab(master_df)
         old_ip_data, new_ip_data, non_conflicted_ip_df = _summary_forecast()
-        _non_confliction_data_processing(old_ip_data,
-                                         new_ip_data,
+        _non_confliction_data_processing(new_ip_data,
                                          non_conflicted_ip_df)
+        _confliction_data_processing(old_ip_data,
+                                     non_conflicted_ip_df)
 
         self._tweak_and_save_workbook(writer)
 

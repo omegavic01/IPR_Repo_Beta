@@ -657,9 +657,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 self.filename_cls.free_space_df_filename(),
                 free_space_df)
 
-        def _confliction_data_processing(old_ip_data,
-                                         new_ip_data,
-                                         no_conflict_df):
+        def _non_confliction_data_processing(new_ip_data, no_conflict_df):
             labels = no_conflict_df.columns.values.tolist()
             new_ip_data_df = pd.DataFrame(new_ip_data, columns=labels)
             forecast_ip_df = pd.concat([new_ip_data_df, no_conflict_df],
@@ -912,9 +910,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
         _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
         _build_free_space_tab(master_df)
         old_ip_data, new_ip_data, non_conflicted_ip_df = _summary_forecast()
-        _confliction_data_processing(old_ip_data,
-                                     new_ip_data,
-                                     non_conflicted_ip_df)
+        _non_confliction_data_processing(old_ip_data,
+                                         new_ip_data,
+                                         non_conflicted_ip_df)
 
         self._tweak_and_save_workbook(writer)
 

@@ -664,7 +664,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 new_ip_data_df.columns[17:],
                 axis=1)
             cleaned_new_ip_data_df.to_excel(writer,
-                                            sheet_name='Forecast Add Updates',
+                                            sheet_name='Conflict Add Updates',
                                             index=False)
             forecast_ip_df = pd.concat([new_ip_data_df, no_conflict_df],
                                        ignore_index=True)
@@ -692,7 +692,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
         def _confliction_data_processing(old_ip_data, no_conflict_df):
             labels = no_conflict_df.columns.values.tolist()
             old_ip_data_df = pd.DataFrame(old_ip_data, columns=labels)
-            old_ip_data_df.to_excel(writer, sheet_name='Needs Updating',
+            old_ip_data_df.to_excel(writer, sheet_name=
+                                    'Conflict Forecast Updates',
                                     index=False)
 
         def _summary_forecast():
@@ -733,11 +734,12 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 conflicted_df = master_dataset_df[
                     (master_dataset_df['No Conflict'] == 'NO') &
                     (~master_dataset_df['DDI View'].
-                     str.contains('CDS-HUB', na=False)) &
+                     str.contains('HUB', na=False)) &
                     (~master_dataset_df['DDI View'].
                      str.contains('00555', na=False)) &
                     (~master_dataset_df['DDI View'].
-                     str.contains('00324', na=False))]
+                     str.contains('00324', na=False)) &
+                    (master_dataset_df['Oc-1'] != 100)]
                 non_conflict_df = master_dataset_df.drop(conflicted_df.index)
                 conflict_idx = list(conflicted_df).index('No Conflict')
                 iprd_idx = list(conflicted_df).index('IPR D')
@@ -762,11 +764,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
 
             def get_subnet_ratio(conflict_cidr):
                 subnet_ratio = {ipr_index: 19, 17: 20, 18: 20, 19: 21, 20: 21,
-                                21: 21, 22: 22}
+                                21: 21, 22: 22, 23: 23, 24: 24}
                 if conflict_cidr in subnet_ratio:
                     return subnet_ratio[conflict_cidr]
-                if 24 >= conflict_cidr > 22:
-                    return int(subnet_ratio[22])
                 else:
                     return 'Out of Range.'
 
@@ -889,14 +889,8 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 new_ipr_record = dirty_subnet_for_record[:]
                 new_ipr_record[1] = new_subnet_record
                 # IPR D Update
-                if new_ipr_record[ipr_index] and 'assigned' not in \
-                        new_ipr_record[ipr_index]:
-                    new_ipr_record[ipr_index] = \
-                        new_ipr_record[ipr_index] + ', assigned'
-                    new_ipr_record[disposition_index] = 'add'
-                else:
-                    new_ipr_record[ipr_index] = 'assigned'
-                    new_ipr_record[disposition_index] = 'add'
+                new_ipr_record[ipr_index] = 'assigned'
+                new_ipr_record[disposition_index] = 'add'
                 if dirty_subnet_for_record[ipr_index] and 'followup' not in \
                         dirty_subnet_for_record[ipr_index]:
                     dirty_subnet_for_record[ipr_index] = \

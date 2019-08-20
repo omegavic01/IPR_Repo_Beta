@@ -20,7 +20,7 @@ Option 3: Good place to call a single network view.  Set breakpoint to use for
 """If you want to gather all the ipam data and pickle the data.
 Option 1.
 """
-gather_current_ipam_data = False
+gather_current_ipam_data = True
 if gather_current_ipam_data:
     ip_data = IpamGetsToWrite()
     ip_data.get_extensible_attributes()
@@ -34,7 +34,7 @@ gather_current_ipam_data was run.  Then compiles the networks and
 networkcontainers into a .xlsx and .pickle file in the interim dir.
 This data is expected to be processed by other scripts
 """
-run_ipam_data_processing_interim = False
+run_ipam_data_processing_interim = True
 if run_ipam_data_processing_interim:
     data_filenames_cls = DataFileNames()
     ipam_interim = IpamDataInterim()

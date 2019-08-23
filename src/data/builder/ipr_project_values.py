@@ -294,3 +294,13 @@ class DataFileNames:
     def conflict_free_df_filename():
         """Returns source filename for global addresses."""
         return 'conflict_free_df.pkl'
+
+    @staticmethod
+    def conflict_error_filename():
+        """Returns source filename for global addresses."""
+        return 'conflict_error.csv'
+
+    @staticmethod
+    def overlap_error_filename():
+        """Returns source filename for global addresses."""
+        return 'overlap_error.csv'

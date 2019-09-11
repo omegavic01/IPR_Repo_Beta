@@ -108,6 +108,7 @@ src/features/*.ipynb
 /references
 /src/models
 /src/visualization
+/venv
 
 # Unused Files
 Makefile

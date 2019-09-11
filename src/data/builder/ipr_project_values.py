@@ -304,3 +304,8 @@ class DataFileNames:
     def overlap_error_filename():
         """Returns source filename for global addresses."""
         return 'overlap_error.csv'
+
+    @staticmethod
+    def full_dataset_df_filename():
+        """Returns source filename for global addresses."""
+        return 'full_dataset.pkl'

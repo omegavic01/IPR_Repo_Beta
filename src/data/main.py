@@ -34,7 +34,7 @@ gather_current_ipam_data was run.  Then compiles the networks and
 networkcontainers into a .xlsx and .pickle file in the interim dir.
 This data is expected to be processed by other scripts
 """
-run_ipam_data_processing_interim = False
+run_ipam_data_processing_interim = True
 if run_ipam_data_processing_interim:
     data_filenames_cls = DataFileNames()
     ipam_interim = IpamDataInterim()
@@ -55,15 +55,17 @@ if run_ipam_data_processing_processed:
     interim_dir = dir_cls.interim_dir()
     ipam_processing.run_ipam_processing(
         read.read_from_pkl(dir_cls.interim_dir(),
-                           data_filenames_cls.ipam_dump_interim_panda()))
+                           data_filenames_cls.ipam_dump_interim_panda()),
+        summary=False,
+        full_dataset_ipr_d=False)
 
 
-run_ipam_reports = False
+run_ipam_reports = True
 if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()
     ipam_reports.generate_percent_report()
-    ipam_reports.generate_forecast_percent_report()
+    #ipam_reports.generate_forecast_percent_report()
 
 """Good place to debug network data from a network view.
 """

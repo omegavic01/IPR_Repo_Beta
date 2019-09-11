@@ -108,7 +108,7 @@ src/features/*.ipynb
 /references
 /src/models
 /src/visualization
-/venv
+/ipr_v2_venv
 
 # Unused Files
 Makefile

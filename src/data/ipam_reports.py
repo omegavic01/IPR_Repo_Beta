@@ -54,7 +54,11 @@ class IpamReports:
         """
         source_wb = openpyxl.load_workbook(filename=source)
         source_ws = source_wb[sheet_name]
-        template_wb = openpyxl.load_workbook(filename=template)
+        try:
+            template_wb = openpyxl.load_workbook(filename=template)
+        except FileNotFoundError:
+            print('Report by percent-BLANK.xlsx template not found.')
+            return
         template_ws = template_wb.worksheets[1]
         for row in source_ws:
             for cell in row:

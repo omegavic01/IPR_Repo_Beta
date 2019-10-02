@@ -422,13 +422,11 @@ def _get_view_index(views, ddi_data):
     """Takes a compiled list of views and assigns an index in a dictionary as
     indexed by the list of ddi data returned."""
     views_index_temp = {}
-    for enum, ddi_line in enumerate(ddi_data):
-        if isinstance(ddi_line, dict):
-            # Updated for >5000 datasets.
-            continue
-        temp_dict = {ddi_line[0]['network_view']: enum}
-        views_index_temp.update(temp_dict)
-        continue
+    for view in views:
+        for enum, ddi_line in enumerate(ddi_data):
+            if view == ddi_line[0]['network_view']:
+                temp_dict = {view: enum}
+                views_index_temp.update(temp_dict)
     return views_index_temp
 
 
@@ -501,11 +499,6 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 else:
                     import_add.append(add_or_del_row)
                     continue
-#            else:
-#                if add_or_del_row[1] not in \
-#                        ddi_data[views_index[add_or_del_row[15]]] and \
-#                        'del' not in add_or_del_row[0]:
-#                    import_add.append(add_or_del_row)
 
             # delete check
             if 'del' in add_or_del_row[0] and add_or_del_row[1] in \
@@ -657,36 +650,10 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                             ea_row[ea_index[key]] in \
                             ea_listed_values[key]:
                         ipr_temp_list.append(ea_row[ea_index[key]])
-                    else:
-                        import_override.append([ea_row[15].strip(),
-                                                ea_row[1].strip(),
-                                                ea_row[14].strip(),
-                                                {key: ea_row[ea_index[key]]}])
-                        continue
                     # Remove blank elements from list.
                     ipr_temp_list = [x for x in ipr_temp_list if x]
 
-                    # If in IPR and no key listed in IPAM data.
-                    if ea_row[1] == '192.168.0.0':
-                        print('myvar: {}'.format(ea_row[1]))
-                    if key not in \
-                            ddi_data[ddi_index][ea_row[1]]['extattrs'] \
-                            and ipr_temp_list:
-                        if len(ipr_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipr_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipr_temp_list[
-                                                        0]}])
-                        continue
-
-                    # Building DDI list for diff against the Multi Att. Columns
+                    # Building DDI list for diff against the IPR D Columns
                     if isinstance(ddi_data[ddi_index][
                                       ea_row[1]]['extattrs'][
                                           key]['value'], list):
@@ -700,20 +667,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     # Check for diff between listed sets.
                     in_ipam_not_ipr = diff(ipam_temp_list, ipr_temp_list)
                     in_ipr_not_ipam = diff(ipr_temp_list, ipam_temp_list)
-                    if in_ipam_not_ipr:
-                        if len(ipam_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipam_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipam_temp_list[0]}])
-                        continue
-                    if in_ipr_not_ipam:
+                    if in_ipam_not_ipr or in_ipr_not_ipam:
                         if len(ipr_temp_list) > 1:
                             import_override.append([ea_row[15].strip(),
                                                     ea_row[1].strip(),
@@ -900,8 +854,6 @@ def _get_views(data_lists):
     """Builds a set list of views from within src_ws"""
     views = []
     for data_list in data_lists:
-        if data_list[15] in ['IPR-HMB']:
-            continue
         views.append(data_list[15])
     return list(set(views))
 
@@ -936,9 +888,6 @@ def main():
     processed_data_path = os.path.join(PROJECT_DIR, 'data', 'processed')
     reports_data_path = os.path.join(PROJECT_DIR, 'reports')
 
-    # What do you want to do:
-    ddi_api_call = False
-
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
                             'Book1.xlsx')
@@ -971,9 +920,6 @@ def main():
             cleaning_data = data.row_values(row)
             if cleaning_data[1].strip() == '' and \
                     cleaning_data[15].strip() == '':
-                continue
-            # Ignore views:
-            if cleaning_data[15].strip() in ['IPR-HMB']:
                 continue
             # Capture lines that do not have a view listed. Sometimes add
             # dispostions do not have a view listed.  This will help populated.
@@ -1044,7 +990,7 @@ def main():
     views = _get_views(src_data)
 
     # Update to True if a fresh set of data is needed from ddi.
-
+    ddi_api_call = False
     if ddi_api_call:
         logger.info('ddi_api_call has been set to True.  Querying DDI.')
         get_ddi_ip_data(views, ea_data_file, ddi_data_file, logger)
@@ -1053,7 +999,6 @@ def main():
     with open(ddi_data_file, 'rb') as file_in:
         ddi_data = pickle.load(file_in)
     # Build data extensions for later processing.
-
     views_index = _get_view_index(views, ddi_data)
     ddi_data = _get_rekey_ddi_data(ddi_data)
     ea_index = _get_ea_index()

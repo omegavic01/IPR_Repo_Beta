@@ -20,7 +20,7 @@ Option 3: Good place to call a single network view.  Set breakpoint to use for
 """If you want to gather all the ipam data and pickle the data.
 Option 1.
 """
-gather_current_ipam_data = False
+gather_current_ipam_data = True
 if gather_current_ipam_data:
     ip_data = IpamGetsToWrite()
     ip_data.get_extensible_attributes()

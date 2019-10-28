@@ -436,6 +436,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 'leaf', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                'retired', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'dup', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
@@ -542,7 +545,9 @@ class IpamDataProcessed(_BaseIpamProcessing):
             ['100.88.0.0/29', 'network', 'Filt-100.88-Cidr-29', False],
             ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
             ['100.64.0.0/29', 'network', 'Filt-100.64-Cidr-29', False],
-            ['Public-IP', 'network_view', 'Filt-Public-IP-View', False]
+            ['Public-IP', 'network_view', 'Filt-Public-IP-View', False],
+            ['retired', 'extattrs_IPR Designation_value', 'Filt-Retired',
+                False]
             ]
 
         # IPR Designation Filters Sheets

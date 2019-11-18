@@ -127,4 +127,4 @@ class IpamReports:
         self._copy_data_over(self.ipam_to_ipr_xlsx,
                              percent_blank_xlsx,
                         percent_forecast_report_with_date_filename_and_path,
-                             'Summary Forecast')
+                             'Summary')

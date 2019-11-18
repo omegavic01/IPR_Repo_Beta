@@ -1,24 +1,25 @@
+"""
+Grouping of functions with a True/False tag.  Allows for the separation of the
+main components of the scripts.  Which will compile and generate the reports
+needed for IPR.
+
+WIP: Update so these groupings can be coupled with either a website or
+desktop application.  For external party use.
+
+"""
 from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
 from ipam_data_processing import IpamDataInterim, IpamDataProcessed
 from ipam_reports import IpamReports
-from builder import DirectoryValues
-from builder import DataFileNames
-from builder import Reader
+from builder import DirectoryValues, DataFileNames, Reader
 
 
-"""What would you like to do?  Set to true or false based on what you would
-like to do.
-Option 1: Call ipam and pickle the data.
-
-Option 2: Takes in the networks and networkconatiners pickle files and bounces
-            it through the ipam_data_interim script.
-Option 3: Good place to call a single network view.  Set breakpoint to use for
-          debugging.
 """
+This grouping calls and pickles the IB data via IB's web api.
 
-"""If you want to gather all the ipam data and pickle the data.
-Option 1.
+Example Notebook: IPR_Data_Notebook.ipynb (Not in gitHub yet...) has examples 
+of the below functions.
+
 """
 gather_current_ipam_data = True
 if gather_current_ipam_data:
@@ -29,10 +30,15 @@ if gather_current_ipam_data:
     ip_data.get_networks()
     ip_data.get_networkcontainers()
 
-"""Run Ipam Data Interim.  This takes the data from the lastime
-gather_current_ipam_data was run.  Then compiles the networks and 
-networkcontainers into a .xlsx and .pickle file in the interim dir.
-This data is expected to be processed by other scripts
+
+"""
+This grouping takes the raw data gathered from the above set of commands. Then 
+builds out the interim data sets used by the processing set of commands listed 
+below this subgroup.
+
+Example Notebook: Builder Notebook.ipynb (Not in gitHub yet...) has examples
+of the calls that the below functions perform.
+
 """
 run_ipam_data_processing_interim = True
 if run_ipam_data_processing_interim:
@@ -46,6 +52,16 @@ if run_ipam_data_processing_interim:
         data_filenames_cls.ipam_dump_interim_dicted())
 
 
+"""
+This grouping takes the interim data set and processes the data to be used for 
+the reporting function listed below this group.
+
+WIP: "summary" statement and "full_dataset_ipr_d" keywords shown in the
+ipam_processing.run_ipam_processing().
+
+Example Notebook: ipam_data_processed.ipynb (Not in gitHub yet...)
+
+"""
 run_ipam_data_processing_processed = True
 if run_ipam_data_processing_processed:
     data_filenames_cls = DataFileNames()
@@ -60,6 +76,14 @@ if run_ipam_data_processing_processed:
         full_dataset_ipr_d=False)
 
 
+"""
+This grouping is for the final reports that are generated for production use.
+
+WIP: generate_forecast_percent_report() (This function at the moment is only
+    duplicating ipam_reports.generate_percent_report().)  Looking to create
+    and finalize this report for internal use.
+
+"""
 run_ipam_reports = True
 if run_ipam_reports:
     ipam_reports = IpamReports()
@@ -67,7 +91,16 @@ if run_ipam_reports:
     ipam_reports.generate_percent_report()
     ipam_reports.generate_forecast_percent_report()
 
-"""Good place to debug network data from a network view.
+
+"""
+Good place to debug network data from a network view.  This is not to be used 
+for the main report generation.
+
+****For Debug Use Only****
+
+Recommend to disable the above group of functions if you plan on debugging 
+here.
+
 """
 gather_network_data_for_a_network_view = False
 if gather_network_data_for_a_network_view:
@@ -76,5 +109,3 @@ if gather_network_data_for_a_network_view:
     ipam_call_type_cls = IpamCallTypes()
     data_returned = ipam_api_request_cls.ipam_api_request(
         ipam_call_type_cls.networks('00324-CDS'))
-
-

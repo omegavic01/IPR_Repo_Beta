@@ -448,9 +448,6 @@ class IpamDataProcessed(_BaseIpamProcessing):
                 'divest', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
-                're-ip', na=False)]
-        temp_df = temp_df[
-            ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'drop reserve', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
@@ -534,7 +531,6 @@ class IpamDataProcessed(_BaseIpamProcessing):
             ['dup', 'extattrs_IPR Designation_value', 'Filt-Dup', False],
             ['ignore', 'extattrs_IPR Designation_value', 'Filt-Ignore', False],
             ['divest', 'extattrs_IPR Designation_value', 'Filt-Divest', False],
-            ['re-ip', 'extattrs_IPR Designation_value', 'Filt-Re-IP', False],
             ['drop reserve', 'extattrs_IPR Designation_value',
              'Filt-Drop Reserve', False],
             ['parent', 'extattrs_IPR Designation_value',

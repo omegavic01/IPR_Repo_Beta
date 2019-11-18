@@ -492,8 +492,12 @@ class IpamDataProcessed(_BaseIpamProcessing):
                                          summary,
                                          full_dataset_ipr_d):
         """Main Processing method."""
+
+        """Pulls in interim file for processing."""
         workbook_file = self.dir_cls.processed_dir() + '\\' + \
             self.filename_cls.processed_filename()
+
+        """Builds dataframe with the following columns."""
         processing_data = interim_data[
             ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
              'extattrs_City_value',
@@ -506,7 +510,11 @@ class IpamDataProcessed(_BaseIpamProcessing):
              'net_type', 'network_view', 'extattrs_IPR Designation_value',
              'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4',
              '/Cidr']].copy()
+
+        """Updates dataframe with a Disposition column."""
         processing_data.insert(loc=0, column='Disposition', value='')
+
+        """Builds pandas writer object."""
         writer = pd.ExcelWriter(workbook_file, engine='xlsxwriter')
 
         # Master and Uncategorized processing.

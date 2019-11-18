@@ -65,7 +65,7 @@ if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()
     ipam_reports.generate_percent_report()
-    #ipam_reports.generate_forecast_percent_report()
+    ipam_reports.generate_forecast_percent_report()
 
 """Good place to debug network data from a network view.
 """

@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +17,7 @@ permissions and limitations under the License.
 
 """
 import time
-from collections import MutableMapping
 from collections import OrderedDict
-import logging
 from ipaddr import IPv4Network
 from netaddr import IPNetwork
 import netaddr
@@ -26,212 +25,18 @@ import pandas as pd
 from openpyxl import Workbook
 import os
 from builder import Cgn
-from builder import DirectoryValues
-from builder import DataFileNames
-from builder import EnvironmentValues
-from builder import LoggingValues
-from builder import Reader
-from builder import Writer
+from ipam_base_processing import BaseIpamProcessing
 
 
-class _BaseIpamProcessing:
-
-    def __init__(self):
-        self._log_cls = LoggingValues()
-        logging.basicConfig(filename=self._log_cls.log_filename(),
-                            level=logging.DEBUG,
-                            filemode='a',
-                            format=self._log_cls.log_format())
-        self._logger = logging.getLogger(__name__)
-        self.dir_cls = DirectoryValues()
-        self.filename_cls = DataFileNames()
-        self.env_cls = EnvironmentValues()
-        self.reader_cls = Reader()
-        self.writer_cls = Writer()
-
-    def _convert_flatten(self, data, parent_key='', sep='_'):
-        """Method to convert input of nested dict's to a flattened dict
-
-        default seperater '_'
-
-        """
-        items = []
-        for key, value in data.items():
-            new_key = parent_key + sep + key if parent_key else key
-
-            if isinstance(value, MutableMapping):
-                items.extend(self._convert_flatten(
-                    value, new_key, sep=sep).items())
-            else:
-                items.append((new_key, value))
-        return dict(items)
-
-    def _flatten_data(self, data_to_be_flattened):
-        """Method to flatten the requested data."""
-        return [self._convert_flatten(data_to_be_flattened[i])
-                for i in range(len(data_to_be_flattened))]
-
-    @staticmethod
-    def get_listed_values(data):
-        """Loops through data and identifies a list.  If list then convert
-        to a string seperated by a ;.
-
-        """
-        ea_updater = {}
-        for key, value in data[0].items():
-            if isinstance(value, list) and value:
-                ea_updater[key] = ', '.join(str(e) for e in sorted(value))
-        return ea_updater
-
-    @staticmethod
-    def put_listed_values(updater_data, source_data, ea_att):
-        """Replaces the converted listed values to the source dataset values.
-        This follows get_listed_values.
-
-        """
-        for key, value in updater_data.items():
-            source_data.at[key, ea_att] = value
-        return source_data
-
-    def oct_list(self):
-        return ['Oc-1', 'Oc-2', 'Oc-3', 'Oc-4', '/Cidr']
-
-    def split_out_network(self, dataframe, column_to_split):
-        oct_listed = self.oct_list()
-        network_col = dataframe[column_to_split].str.split(".", expand=True)
-        dataframe[oct_listed[0]] = network_col[0].astype(str).astype(int)
-        dataframe[oct_listed[1]] = network_col[1].astype(str).astype(int)
-        dataframe[oct_listed[2]] = network_col[2].astype(str).astype(int)
-        split_third_value = network_col[3].str.split("/", expand=True)
-        dataframe[oct_listed[3]] = split_third_value[0].astype(str).astype(int)
-        dataframe[oct_listed[4]] = split_third_value[1].astype(str).astype(int)
-        return dataframe
-
-    def sort_df_by_oct_list(self, df):
-        return df.sort_values(
-            self.oct_list(), ascending=[True, True, True, True, True]
-        )
-
-    def reindex_df(self, df):
-        df.index = range(len(df.index))
-        df.index += 10000
-        return df
-
-
-class IpamDataInterim(_BaseIpamProcessing):
-    """Class to read in networks and networkcontainers to then be smashed,
-    mangled, and spit out into a .pickle and .xlsx file
-
-    """
-
-    def run_ipam_interim(self,
-                         raw_data,
-                         xlsx_filename,
-                         panda_filename,
-                         dicted_filename):
-        """Method that runs through all of the interim processing steps.  Then
-        writes the panda dataframe to excel and to a pickle file.
-
-        """
-        self._logger.info('Starting the interim process for the raw data.')
-        start = time.perf_counter()
-        output_data = \
-            self.ea_ipr_designation_processing(
-                self.ea_datacenter_processing(
-                    self.panda_processing_of_flattened_data(
-                        self._flatten_data(
-                            raw_data))))
-
-        output_data.to_excel(self.dir_cls.interim_dir() + '\\' +
-                             xlsx_filename)
-        output_data.to_pickle(self.dir_cls.interim_dir() + '\\' +
-                              panda_filename)
-        self.writer_cls.write_to_pkl(
-            self.dir_cls.interim_dir(),
-            dicted_filename,
-            output_data.to_dict())
-
-        end = time.perf_counter()
-        time_taken = end - start
-        self._logger.info('Interim processed the data in %2f seconds',
-                          time_taken)
-        self._logger.info('Finished the interim processing step.')
-
-    def get_raw_data_networks_networkcontainers(self):
-        """Gets the network and networkcontainer data.  Returns the two
-        datasets as one list.
-
-        """
-        networks = self.reader_cls.read_from_pkl(
-            self.dir_cls.raw_dir(),
-            self.filename_cls.networks_filename())
-        networkcontainers = self.reader_cls.read_from_pkl(
-            self.dir_cls.raw_dir(),
-            self.filename_cls.networkcontainers_filename())
-        return networks + networkcontainers
-
-    def ea_datacenter_processing(self, data):
-        """Processes the ea_datacenter column.  To be have any lists converted
-        to strings and seperated by a ;.
-
-        """
-        ea_value = 'extattrs_Datacenter_value'
-        dc_data = [data[ea_value].to_dict()]
-        updater_dcdata = self.get_listed_values(dc_data)
-        return self.put_listed_values(updater_dcdata, data, ea_value)
-
-    def ea_ipr_designation_processing(self, data):
-        """Processes the ea_ipr_designation column.  To convert any lists to
-        strings and seperated by a ;.
-
-        """
-        ea_value = 'extattrs_IPR Designation_value'
-        dc_data = [data[ea_value].to_dict()]
-        updater_dcdata = self.get_listed_values(dc_data)
-        return self.put_listed_values(updater_dcdata, data, ea_value)
-
-    def panda_processing_of_flattened_data(self, raw_nets):
-        """Turns the returned flat dict into a panda dataframe.
-
-        Further processing:
-
-        1. Add 'net_type' column.
-        2. Add oct1, oct2, oct3, oct4, and /Cidr columns.
-        3. Add oct1, oct2, oct3, oct4, and /Cidr columns.
-        4. Sorting Data via line 2 values.
-        5. Return Indexed data starting at 10000
-        """
-
-        net_flat_df = pd.DataFrame(raw_nets)
-
-        # Further processing Line 1.
-        net_flat_df['net_type'] = net_flat_df['_ref'].str.split(
-            '/', expand=True)[0]
-
-        # Further processing Line 2.
-        net_flat_df = self.split_out_network(net_flat_df, 'network')
-
-        # Further processesing Line 3.
-        network_col = net_flat_df['network'].str.split("/", expand=True)
-        net_flat_df['IP Subnet'] = network_col[0].astype(str)
-        net_flat_df['IP Cidr'] = network_col[1].astype(str).astype(int)
-
-        # Further processing Line 4.
-        net_flat_df = self.sort_df_by_oct_list(net_flat_df)
-
-        # Further processing Line 5.
-        net_flat_df = self.reindex_df(net_flat_df)
-        return net_flat_df
-
-
-class IpamDataProcessed(_BaseIpamProcessing):
+class IpamDataProcessed(BaseIpamProcessing):
     """Processing phase of the IPAM data."""
 
     def run_ipam_processing(self,
                             interim_data,
                             summary=True,
                             full_dataset_ipr_d=None):
-        """Method that runs through all of the interim processing steps.  Then
+        """
+        Method that runs through all of the interim processing steps.  Then
         writes the panda dataframe to excel and to a pickle file.
 
         """
@@ -339,21 +144,64 @@ class IpamDataProcessed(_BaseIpamProcessing):
         return clean_vrf
 
     @staticmethod
-    def _conflict_overlap_check(master_interim_df):
-        m_list_index = master_interim_df['Index'].to_list()
-        m_list_cidr = master_interim_df['IPv4 Subnet'].to_list()
-        m_list_cidr_set = list(OrderedDict.fromkeys(m_list_cidr))
-        m_cidr_index_zip = list(zip(m_list_cidr, m_list_index))
-        m_dict_overlap = {}
-        m_dict_conflict = {}
-        for i in m_list_cidr_set:
-            m_dict_overlap[i] = []
-            m_dict_conflict[i] = []
-        for item in m_cidr_index_zip:
-            if item[0] in m_dict_conflict:  # Conflict check
-                m_dict_conflict[item[0]].append(item[1])
-        for item in m_cidr_index_zip:
-            for _ip in m_list_cidr_set:
+    def summary_conflict_overlap_check(summary_df):
+        """
+        Main Logic for the conflict and overlap check.
+
+        Returns two dictionaries:
+            str(m_dict_overlap): list(indexes of the key (subnet) that
+                                overlaps.
+            str(m_dict_conflict): list(indexes of the key(subnet) that
+                                conflicts.
+
+        """
+
+        """
+        Builds a list with all the subnets and indexes in the following format:
+                <class 'tuple'>: ('10.0.0.0/16', 10001)
+                <class 'tuple'>: ('10.0.0.0/22', 10002)
+
+        """
+        cidr_index_zip = list(zip(summary_df['IPv4 Subnet'].to_list(),
+                                  summary_df['Index'].to_list(),
+                                  )
+                              )
+
+        """Builds a list of unique cidr's while maintaining order."""
+        list_cidr_set = list(OrderedDict.fromkeys(
+            summary_df['IPv4 Subnet'].to_list()
+                                                  )
+                             )
+
+        """
+        Builds overlap and conflict dictionaries for this functions data 
+        storage.
+        
+        """
+        dict_overlap = {}
+        dict_conflict = {}
+
+        """Unique list of cidr values become the keys to the dictionaries."""
+        for i in list_cidr_set:
+            dict_overlap[i] = []
+            dict_conflict[i] = []
+
+        """
+        Updates dictionaries if the item value is found in the conflict 
+        dictionary.
+        
+        """
+        for item in cidr_index_zip:
+            if item[0] in dict_conflict:  # Conflict check
+                dict_conflict[item[0]].append(item[1])
+
+        """
+        Logic for the overlap check.  Sped up process by filtering on first
+        and second octets.
+        
+        """
+        for item in cidr_index_zip:
+            for _ip in list_cidr_set:
                 if int(_ip.split('.')[0]) < int(item[0].split('.')[0]):
                     continue
                 if int(_ip.split('.')[1]) < int(item[0].split('.')[1]):
@@ -362,66 +210,87 @@ class IpamDataProcessed(_BaseIpamProcessing):
                     continue
                 elif _ip.split('.')[0:2] == item[0].split('.')[0:2]:
                     if IPNetwork(_ip) in IPNetwork(item[0]):
-                        m_dict_overlap[_ip].append(item[1])
+                        dict_overlap[_ip].append(item[1])
                         continue
                 elif int(item[0].split('.')[1]) < int(_ip.split('.')[1]):
                     break
                 else:
-                    print(item)
-        return m_dict_overlap, m_dict_conflict
+                    print(item) # Need to update this statement to send to log.
 
-    def _update_df_conflict_overlap_data(self, overlaps, conflicts, dataframe):
-        dataframe['Conflict Subnet Overlap - Index No.'] = ''
-        dataframe['Conflict Subnet - Index No.'] = ''
-        dataframe['No Overlap'] = ''
-        dataframe['No Conflict'] = ''
-        dataframe['Conflict Subnet Overlap - Count'] = ''
-        dataframe['Conflict Subnet - Count'] = ''
-        for row in dataframe.index.values:
-            if overlaps[dataframe.loc[row, 'IPv4 Subnet']]:
-                if len(overlaps[dataframe.loc[row, 'IPv4 Subnet']]) > 1:
-                    dataframe.loc[
+        """Returns the dictionaries with offending indexes in a list"""
+        return dict_overlap, dict_conflict
+
+    @staticmethod
+    def summary_update_df_conflict_overlap_data(overlaps,
+                                                conflicts,
+                                                summary_df):
+        """
+        Function to build out the summary dataframe with the identified
+        information gathered from the _conflict_overlap_check function call.
+
+        """
+
+        """Adds new columns to the summary dataframe."""
+        summary_df['Conflict Subnet Overlap - Index No.'] = ''
+        summary_df['Conflict Subnet - Index No.'] = ''
+        summary_df['No Overlap'] = ''
+        summary_df['No Conflict'] = ''
+        summary_df['Conflict Subnet Overlap - Count'] = ''
+        summary_df['Conflict Subnet - Count'] = ''
+
+        """Loops through to update new columns."""
+        for row in summary_df.index.values:
+            """Overlap Updates."""
+            if overlaps[summary_df.loc[row, 'IPv4 Subnet']]:
+                if len(overlaps[summary_df.loc[row, 'IPv4 Subnet']]) > 1:
+                    summary_df.loc[
                         row, 'Conflict Subnet Overlap - Index No.'] = \
                         ', '.join(str(e) for e in overlaps[
-                            dataframe.loc[row, 'IPv4 Subnet']])
-                    dataframe.loc[
+                            summary_df.loc[row, 'IPv4 Subnet']])
+                    summary_df.loc[
                         row, 'Conflict Subnet Overlap - Count'] = \
-                        len(overlaps[dataframe.loc[row, 'IPv4 Subnet']])
+                        len(overlaps[summary_df.loc[row, 'IPv4 Subnet']])
                 else:
-                    dataframe.loc[
+                    summary_df.loc[
                         row, 'Conflict Subnet Overlap - Index No.'] = \
-                        overlaps[dataframe.loc[row, 'IPv4 Subnet']][0]
-                    dataframe.loc[row, 'Conflict Subnet Overlap - Count'] = 1
-                dataframe.loc[row, 'No Overlap'] = 'NO'
+                        overlaps[summary_df.loc[row, 'IPv4 Subnet']][0]
+                    summary_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
+                summary_df.loc[row, 'No Overlap'] = 'NO'
             else:
-                dataframe.loc[row, 'No Overlap'] = 'YES'
-            if len(conflicts[dataframe.loc[row, 'IPv4 Subnet']]) > 2:
+                summary_df.loc[row, 'No Overlap'] = 'YES'
+            """Conflict Updates."""
+            if len(conflicts[summary_df.loc[row, 'IPv4 Subnet']]) > 2:
                 temp_list = conflicts[
-                    dataframe.loc[row, 'IPv4 Subnet']].copy()
+                    summary_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                dataframe.loc[row, 'Conflict Subnet - Index No.'] = \
+                summary_df.loc[row, 'Conflict Subnet - Index No.'] = \
                     ', '.join(str(e) for e in temp_list)
-                dataframe.loc[row, 'No Conflict'] = 'NO'
-                dataframe.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
-            elif len(conflicts[dataframe.loc[row, 'IPv4 Subnet']]) == 2:
+                summary_df.loc[row, 'No Conflict'] = 'NO'
+                summary_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
+            elif len(conflicts[summary_df.loc[row, 'IPv4 Subnet']]) == 2:
                 temp_list = conflicts[
-                    dataframe.loc[row, 'IPv4 Subnet']].copy()
+                    summary_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                dataframe.loc[row, 'Conflict Subnet - Index No.'] = \
+                summary_df.loc[row, 'Conflict Subnet - Index No.'] = \
                     temp_list[0]
-                dataframe.loc[row, 'No Conflict'] = 'NO'
-                dataframe.loc[row, 'Conflict Subnet - Count'] = 1
+                summary_df.loc[row, 'No Conflict'] = 'NO'
+                summary_df.loc[row, 'Conflict Subnet - Count'] = 1
             else:
-                dataframe.loc[row, 'No Conflict'] = 'YES'
+                summary_df.loc[row, 'No Conflict'] = 'YES'
 
-    def master_and_uncategorized_sheet_processing(self, master_data):
-        """This method takes a copy of the full dataframe.  Processes it and
-        returns the mashed data for writing the Master Sheet and Uncategorized
+    def summary_and_un_categorized_sheet_processing(self, temp_df):
+        """
+        This method takes a copy of the full dataframe.  Processes it and
+        returns the mashed data for writing the Summary and Uncategorized
         Sheet.
 
         """
-        temp_df = master_data.copy()
-        # Filter out uneeded data.
+
+        """
+        Here I am filtering out uneeded data that is not to be included in 
+        the summary and uncategoried tabs.
+        
+        """
         temp_df = temp_df.loc[
             (temp_df['/Cidr'] != 32) &
             (temp_df['network'] != '100.88.0.0/29') &
@@ -456,36 +325,53 @@ class IpamDataProcessed(_BaseIpamProcessing):
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'decom', na=False)]
 
-        # Convert to dict for data processing.
+        """Convert the dataframe to a dictionary with the index as keys."""
         temp_dict = temp_df.to_dict('index')
-        temp_master_dict = {}
+
+        """Builds dictionaries for the data to be stored in."""
+        temp_summary_dict = {}
         temp_uncategorized_dict = {}
-        # Pull data out uncategorized data.
+
+        """
+        Builds the two dictionaries based on private or cgn matching 
+        requirements.  If a subnet is is neither a private or cgn ip address
+        it is considered un-categorized.
+        
+        An extension was created for the ipaddr module located in the Builder
+        directory.  Needed to do this in order to create a carrier grade nat
+        filter.
+        
+        """
         for key in temp_dict.keys():
             if IPv4Network(temp_dict[key]['network']).is_private or \
                     Cgn.is_cgn(IPv4Network(temp_dict[key]['network'])):
-                temp_master_dict.update({key: temp_dict[key]})
+                temp_summary_dict.update({key: temp_dict[key]})
             else:
                 temp_uncategorized_dict.update({key: temp_dict[key]})
 
-        master_df = pd.DataFrame.from_dict(temp_master_dict, orient='index')
+        """Build dataframes from the newly created dictionaries."""
+        summary_df = pd.DataFrame.from_dict(temp_summary_dict, orient='index')
         uncategorized_df = pd.DataFrame.from_dict(
             temp_uncategorized_dict, orient='index')
 
-        # Rename column header
+        """Dataframe cleanup prior to conflict and overlap check."""
         header_dict = self.env_cls.header_row_dict()
-        master_df.rename(columns=header_dict, inplace=True)
-        master_df = master_df.reset_index()
-        del master_df['index']
-        master_df['Index'] = master_df.index + 10001
+        summary_df.rename(columns=header_dict, inplace=True)
+        summary_df = summary_df.reset_index()
+        del summary_df['index']
+        summary_df['Index'] = summary_df.index + 10001
 
-        # Performs Conflict and Overlap Check
-        master_overlaps, master_conflicts = \
-            self._conflict_overlap_check(master_df)
-        self._update_df_conflict_overlap_data(master_overlaps,
-                                              master_conflicts,
-                                              master_df)
-        return master_df, uncategorized_df
+        """Overlap and Conflict Check against the master_df dataframe."""
+        summary_overlaps, summary_conflicts = \
+            self.summary_conflict_overlap_check(summary_df)
+
+        """Updates the summary dataframe with the overlap and conflict data."""
+        self.summary_update_df_conflict_overlap_data(
+            summary_overlaps,
+            summary_conflicts,
+            summary_df)
+
+        return summary_df, uncategorized_df
 
     def panda_processing_of_interim_data(self,
                                          interim_data,
@@ -493,23 +379,22 @@ class IpamDataProcessed(_BaseIpamProcessing):
                                          full_dataset_ipr_d):
         """Main Processing method."""
 
-        """Pulls in interim file for processing."""
+        """Pulls in interim data file for processing."""
         workbook_file = self.dir_cls.processed_dir() + '\\' + \
             self.filename_cls.processed_filename()
 
-        """Builds dataframe with the following columns."""
+        """Builds a dataframe with the following columns."""
         processing_data = interim_data[
             ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
-             'extattrs_City_value',
-             'extattrs_Address_value', 'extattrs_Site_value',
-             'extattrs_Datacenter_value',
+             'extattrs_City_value', 'extattrs_Address_value',
+             'extattrs_Site_value', 'extattrs_Datacenter_value',
              'extattrs_Division_value', 'extattrs_Requester Email_value',
-             'extattrs_Agency_value',
-             'extattrs_VLAN Description_value', 'comment',
-             'extattrs_Interface Name_value',
-             'net_type', 'network_view', 'extattrs_IPR Designation_value',
-             'Oc-1', 'Oc-2', 'Oc-3', 'Oc-4',
-             '/Cidr']].copy()
+             'extattrs_Agency_value', 'extattrs_VLAN Description_value',
+             'comment', 'extattrs_Interface Name_value', 'net_type',
+             'network_view', 'extattrs_IPR Designation_value', 'Oc-1', 'Oc-2',
+             'Oc-3', 'Oc-4', '/Cidr'
+             ]
+        ].copy()
 
         """Updates dataframe with a Disposition column."""
         processing_data.insert(loc=0, column='Disposition', value='')
@@ -517,23 +402,29 @@ class IpamDataProcessed(_BaseIpamProcessing):
         """Builds pandas writer object."""
         writer = pd.ExcelWriter(workbook_file, engine='xlsxwriter')
 
-        # Master and Uncategorized processing.
-        master_df, uncategorized_df = \
-            self.master_and_uncategorized_sheet_processing(processing_data)
-        master_df.to_excel(writer, sheet_name='Summary', index=False)
+        """Sends dataframe for summary and uncategorized tab processing."""
+        summary_df, un_categorized_df = \
+            self.summary_and_un_categorized_sheet_processing(
+                processing_data)
+
+        """Writes out the Summary tab."""
+        summary_df.to_excel(writer, sheet_name='Summary', index=False)
         self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                      self.filename_cls.master_df_filename(),
-                                     master_df)
-        # Full Dataset sheet
+                                     summary_df)
+
+        """Writes out the Full-Dataset tab."""
         processing_data.to_excel(writer, sheet_name='Full-Dataset',
                                  index=False,
                                  header=self.env_cls.header_row_list())
-        # Full Dataset pickled
+
+        """Pickles the full dataset."""
         self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                      self.filename_cls.
                                      full_dataset_df_filename(),
                                      processing_data)
 
+        """A nested list of attributes used for spreadsheet tab creation."""
         processing_data_worksheets = [
             ['leaf', 'extattrs_IPR Designation_value', 'Filt-Leaf', False],
             ['dup', 'extattrs_IPR Designation_value', 'Filt-Dup', False],
@@ -552,7 +443,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
             ['Public-IP', 'network_view', 'Filt-Public-IP-View', False],
             ['retired', 'extattrs_IPR Designation_value', 'Filt-Retired',
                 False]
-            ]
+        ]
 
         # IPR Designation Filters Sheets
         for processing in processing_data_worksheets:
@@ -572,13 +463,13 @@ class IpamDataProcessed(_BaseIpamProcessing):
                              header=self.env_cls.header_row_list())
 
         # Uncategorized Sheet
-        uncategorized_df.to_excel(
+        un_categorized_df.to_excel(
             writer, sheet_name='Filt-Uncategorized', index=False,
             header=self.env_cls.header_row_list())
 
         # Build dataset for _clear_vrf and _vrf_summaries_processing
         vrf_idx, vrf_dict, vrf_o_c_dict = \
-            self._compiling_data(master_df.values.tolist())
+            self._compiling_data(summary_df.values.tolist())
 
         def _clear_vrf(vrf_dictionary):
             """Builds and writes the "Clear VRF's" worksheet."""
@@ -1038,7 +929,7 @@ class IpamDataProcessed(_BaseIpamProcessing):
 
         _clear_vrf(vrf_dict)
         _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
-        _build_free_space_tab(master_df)
+        _build_free_space_tab(summary_df)
         # Conflict Updates
         if summary:
             old_ip_data, new_ip_data, non_conflicted_ip_df, conflict_errored = \

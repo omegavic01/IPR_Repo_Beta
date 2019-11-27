@@ -23,7 +23,7 @@ Example Notebook: IPR_Data_Notebook.ipynb (Not in gitHub yet...) has examples
 of the below functions.
 
 """
-gather_current_ipam_data = True
+gather_current_ipam_data = False
 if gather_current_ipam_data:
     ip_data = IpamGetsToWrite()
     ip_data.get_extensible_attributes()
@@ -42,7 +42,7 @@ Example Notebook: Builder Notebook.ipynb (Not in gitHub yet...) has examples
 of the calls that the below functions perform.
 
 """
-run_ipam_data_processing_interim = True
+run_ipam_data_processing_interim = False
 if run_ipam_data_processing_interim:
     ipam_interim = IpamDataInterim()
     ipam_interim.run_ipam_interim(write_to_xlsx=False)
@@ -70,7 +70,7 @@ WIP: generate_forecast_percent_report() (This function at the moment is only
     and finalize this report for internal use.
 
 """
-run_ipam_reports = True
+run_ipam_reports = False
 if run_ipam_reports:
     ipam_reports = IpamReports()
     ipam_reports.generate_ipam_to_ipr_report()

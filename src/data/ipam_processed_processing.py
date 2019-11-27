@@ -138,7 +138,7 @@ class IpamDataProcessed(BaseIpamProcessing):
         return clean_vrf
 
     @staticmethod
-    def summary_conflict_overlap_check(summary_df):
+    def conflict_overlap_check(conflict_overlap_check_df):
         """
         Main Logic for the conflict and overlap check.
 
@@ -156,14 +156,15 @@ class IpamDataProcessed(BaseIpamProcessing):
                 <class 'tuple'>: ('10.0.0.0/22', 10002)
 
         """
-        cidr_index_zip = list(zip(summary_df['IPv4 Subnet'].to_list(),
-                                  summary_df['Index'].to_list(),
+        cidr_index_zip = list(zip(
+            conflict_overlap_check_df['IPv4 Subnet'].to_list(),
+            conflict_overlap_check_df['Index'].to_list(),
                                   )
                               )
 
         # Builds a list of unique cidr's while maintaining order.
         list_cidr_set = list(OrderedDict.fromkeys(
-            summary_df['IPv4 Subnet'].to_list()))
+            conflict_overlap_check_df['IPv4 Subnet'].to_list()))
 
         # Builds dictionaries for storage of data.
         dict_overlap = {}
@@ -202,9 +203,7 @@ class IpamDataProcessed(BaseIpamProcessing):
         return dict_overlap, dict_conflict
 
     @staticmethod
-    def summary_update_df_conflict_overlap_data(overlaps,
-                                                conflicts,
-                                                summary_df):
+    def update_df_conflict_overlap_data(overlaps, conflicts, update_df):
         """
         Function to build out the summary dataframe with the identified
         information gathered from the _conflict_overlap_check function call.
@@ -212,52 +211,54 @@ class IpamDataProcessed(BaseIpamProcessing):
         """
 
         # Adds new columns to the summary dataframe.
-        summary_df['Conflict Subnet Overlap - Index No.'] = ''
-        summary_df['Conflict Subnet - Index No.'] = ''
-        summary_df['No Overlap'] = ''
-        summary_df['No Conflict'] = ''
-        summary_df['Conflict Subnet Overlap - Count'] = ''
-        summary_df['Conflict Subnet - Count'] = ''
+        update_df['Conflict Subnet Overlap - Index No.'] = ''
+        update_df['Conflict Subnet - Index No.'] = ''
+        update_df['No Overlap'] = ''
+        update_df['No Conflict'] = ''
+        update_df['Conflict Subnet Overlap - Count'] = ''
+        update_df['Conflict Subnet - Count'] = ''
 
         # Loops through to update new columns.
-        for row in summary_df.index.values:
+        for row in update_df.index.values:
             # Overlap Updates.
-            if overlaps[summary_df.loc[row, 'IPv4 Subnet']]:
-                if len(overlaps[summary_df.loc[row, 'IPv4 Subnet']]) > 1:
-                    summary_df.loc[
+            if overlaps[update_df.loc[row, 'IPv4 Subnet']]:
+                if len(overlaps[update_df.loc[row, 'IPv4 Subnet']]) > 1:
+                    update_df.loc[
                         row, 'Conflict Subnet Overlap - Index No.'] = \
                         ', '.join(str(e) for e in overlaps[
-                            summary_df.loc[row, 'IPv4 Subnet']])
-                    summary_df.loc[
+                            update_df.loc[row, 'IPv4 Subnet']])
+                    update_df.loc[
                         row, 'Conflict Subnet Overlap - Count'] = \
-                        len(overlaps[summary_df.loc[row, 'IPv4 Subnet']])
+                        len(overlaps[update_df.loc[row, 'IPv4 Subnet']])
                 else:
-                    summary_df.loc[
+                    update_df.loc[
                         row, 'Conflict Subnet Overlap - Index No.'] = \
-                        overlaps[summary_df.loc[row, 'IPv4 Subnet']][0]
-                    summary_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
-                summary_df.loc[row, 'No Overlap'] = 'NO'
+                        overlaps[update_df.loc[row, 'IPv4 Subnet']][0]
+                    update_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
+                update_df.loc[row, 'No Overlap'] = 'NO'
             else:
-                summary_df.loc[row, 'No Overlap'] = 'YES'
+                update_df.loc[row, 'No Overlap'] = 'YES'
             # Conflict Updates.
-            if len(conflicts[summary_df.loc[row, 'IPv4 Subnet']]) > 2:
+            if len(conflicts[update_df.loc[row, 'IPv4 Subnet']]) > 2:
                 temp_list = conflicts[
-                    summary_df.loc[row, 'IPv4 Subnet']].copy()
+                    update_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                summary_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                update_df.loc[row, 'Conflict Subnet - Index No.'] = \
                     ', '.join(str(e) for e in temp_list)
-                summary_df.loc[row, 'No Conflict'] = 'NO'
-                summary_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
-            elif len(conflicts[summary_df.loc[row, 'IPv4 Subnet']]) == 2:
+                update_df.loc[row, 'No Conflict'] = 'NO'
+                update_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
+            elif len(conflicts[update_df.loc[row, 'IPv4 Subnet']]) == 2:
                 temp_list = conflicts[
-                    summary_df.loc[row, 'IPv4 Subnet']].copy()
+                    update_df.loc[row, 'IPv4 Subnet']].copy()
                 temp_list.remove(row + 10001)
-                summary_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                update_df.loc[row, 'Conflict Subnet - Index No.'] = \
                     temp_list[0]
-                summary_df.loc[row, 'No Conflict'] = 'NO'
-                summary_df.loc[row, 'Conflict Subnet - Count'] = 1
+                update_df.loc[row, 'No Conflict'] = 'NO'
+                update_df.loc[row, 'Conflict Subnet - Count'] = 1
             else:
-                summary_df.loc[row, 'No Conflict'] = 'YES'
+                update_df.loc[row, 'No Conflict'] = 'YES'
+
+        return update_df
 
     def _tweak_and_save_workbook(self):
         workbook = self.writer.book
@@ -368,6 +369,45 @@ class IpamDataProcessed(BaseIpamProcessing):
             self.writer, sheet_name='Clear-VRF', index=False,
             header=["Clear VRF's"])
 
+    def potential_update_processing(self, potential_df):
+        conflict_index_data = \
+            potential_df['Conflict Subnet Overlap - Index No.'].to_list(),
+        cleaned_conflict_list = []
+        for conflict_index in conflict_index_data[0]:
+            if not conflict_index:
+                continue
+            elif isinstance(conflict_index, str):
+                cleaned_conflict_list = cleaned_conflict_list + \
+                                     list(map(int, conflict_index.split(",")))
+            else:
+                cleaned_conflict_list.append(conflict_index)
+
+        cleaned_conflict_list = list(set(cleaned_conflict_list))
+        cleaned_conflict_list.sort()
+
+        # Need to figure out how to append the data versus overwriting to one line.
+        potential_update_df = pd.DataFrame()
+        for conflict_index in cleaned_conflict_list:
+            potential_update_df = potential_df.loc[(potential_df['Index'] == conflict_index)]
+        return potential_df
+
+    def forecast_sheet_processing(self, forecast_df):
+        forecast_df = forecast_df.drop(['Conflict Subnet Overlap - Index No.',
+                                        'Conflict Subnet - Index No.',
+                                        'No Overlap',
+                                        'No Conflict',
+                                        'Conflict Subnet Overlap - Count',
+                                        'Conflict Subnet - Count'],
+                                       axis=1)
+
+        forecast_overlaps, forecast_conflicts = \
+            self.conflict_overlap_check(forecast_df)
+        self.update_df_conflict_overlap_data(forecast_overlaps,
+                                             forecast_conflicts,
+                                             forecast_df)
+
+        return forecast_df
+
     def summary_and_un_categorized_sheet_processing(self, temp_df):
         """
         This method takes a copy of the full dataframe.  Processes it and
@@ -448,13 +488,12 @@ class IpamDataProcessed(BaseIpamProcessing):
 
         # Overlap and Conflict Check against the master_df dataframe.
         summary_overlaps, summary_conflicts = \
-            self.summary_conflict_overlap_check(summary_df)
+            self.conflict_overlap_check(summary_df)
 
         # Updates the summary dataframe with the overlap and conflict data.
-        self.summary_update_df_conflict_overlap_data(
-            summary_overlaps,
-            summary_conflicts,
-            summary_df)
+        summary_df = self.update_df_conflict_overlap_data(summary_overlaps,
+                                                          summary_conflicts,
+                                                          summary_df)
 
         return summary_df, uncategorized_df
 
@@ -480,8 +519,6 @@ class IpamDataProcessed(BaseIpamProcessing):
         # Updates dataframe with a Disposition column.
         processing_data.insert(loc=0, column='Disposition', value='')
 
-
-
         # Sends dataframe for summary and uncategorized tab processing.
         summary_df, un_categorized_df = \
             self.summary_and_un_categorized_sheet_processing(
@@ -503,6 +540,30 @@ class IpamDataProcessed(BaseIpamProcessing):
                                      self.filename_cls.
                                      full_dataset_df_filename(),
                                      processing_data)
+
+        # Builds Forecast tab.
+        forecast_df = summary_df[
+            ~summary_df['IPR D'].
+                str.contains('followup', na=False)]
+
+        forecast_df = self.forecast_sheet_processing(forecast_df)
+
+        forecast_df.to_excel(self.writer,
+                             sheet_name='Summary_Forecast',
+                             index=False)
+        self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
+                                     self.filename_cls.master_df_filename(),
+                                     forecast_df)
+
+        # Builds potential update tab utilizing data from the forecast_df.
+        potential_update_df = self.potential_update_processing(forecast_df)
+
+        potential_update_df.to_excel(self.writer,
+                                     sheet_name='Potential_Updates',
+                                     index=False)
+        self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
+                                     self.filename_cls.master_df_filename(),
+                                     potential_update_df)
 
         # A nested list of attributes used for spreadsheet tab creation.
         processing_data_worksheets = [

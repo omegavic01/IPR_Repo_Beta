@@ -16,10 +16,10 @@ from ipam_reports import IpamReports
 from builder import DirectoryValues, DataFileNames, Reader
 
 
-gather_current_ipam_data = True
-run_ipam_data_processing_interim = True
+gather_current_ipam_data = False
+run_ipam_data_processing_interim = False
 run_ipam_data_processing_processed = True
-run_ipam_reports = True
+run_ipam_reports = False
 """
 This grouping calls and pickles the IB data via IB's web api.
 

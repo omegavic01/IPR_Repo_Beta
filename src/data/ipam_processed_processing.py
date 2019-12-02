@@ -468,9 +468,12 @@ class IpamDataProcessed(BaseIpamProcessing):
         filter.
         """
         for key in temp_dict.keys():
-            if IPv4Network(temp_dict[key]['network']).is_private or \
-                    Cgn.is_cgn(IPv4Network(temp_dict[key]['network'])):
+            if IPv4Network(temp_dict[key]['network']).is_private:
                 temp_summary_dict.update({key: temp_dict[key]})
+                continue
+            elif Cgn.is_cgn(IPv4Network(temp_dict[key]['network'])):
+                temp_summary_dict.update({key: temp_dict[key]})
+                continue
             else:
                 temp_uncategorized_dict.update({key: temp_dict[key]})
 
@@ -504,7 +507,7 @@ class IpamDataProcessed(BaseIpamProcessing):
         interim_data = self.reader_cls.read_from_pkl(
             self.dir_cls.interim_dir(),
             self.filename_cls.ipam_dump_interim_panda())
-        processing_data = interim_data[
+        interim_data = interim_data[
             ['network', 'extattrs_Region_List_value', 'extattrs_Country_value',
              'extattrs_City_value', 'extattrs_Address_value',
              'extattrs_Site_value', 'extattrs_Datacenter_value',
@@ -514,15 +517,15 @@ class IpamDataProcessed(BaseIpamProcessing):
              'network_view', 'extattrs_IPR Designation_value', 'Oc-1', 'Oc-2',
              'Oc-3', 'Oc-4', '/Cidr'
              ]
-        ].copy()
+        ]
 
         # Updates dataframe with a Disposition column.
-        processing_data.insert(loc=0, column='Disposition', value='')
+        interim_data.insert(loc=0, column='Disposition', value='')
 
         # Sends dataframe for summary and uncategorized tab processing.
         summary_df, un_categorized_df = \
             self.summary_and_un_categorized_sheet_processing(
-                processing_data)
+                interim_data)
 
         # Writes out the Summary tab.
         summary_df.to_excel(self.writer, sheet_name='Summary', index=False)
@@ -531,15 +534,16 @@ class IpamDataProcessed(BaseIpamProcessing):
                                      summary_df)
 
         # Writes out the Full-Dataset tab.
-        processing_data.to_excel(self.writer, sheet_name='Full-Dataset',
-                                 index=False,
-                                 header=self.env_cls.header_row_list())
+        interim_data.to_excel(self.writer,
+                              sheet_name='Full-Dataset',
+                              index=False,
+                              header=self.env_cls.header_row_list())
 
         # Pickles the full dataset.
         self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                      self.filename_cls.
                                      full_dataset_df_filename(),
-                                     processing_data)
+                                     interim_data)
 
         # Builds Forecast tab.
         forecast_df = summary_df[
@@ -589,14 +593,14 @@ class IpamDataProcessed(BaseIpamProcessing):
         # IPR Designation Filters Sheets
         for processing in processing_data_worksheets:
             if isinstance(processing[0], str):
-                processing_data[processing_data[
+                interim_data[interim_data[
                     processing[1]].str.contains(processing[0], na=False)]. \
                     to_excel(self.writer,
                              sheet_name=processing[2],
                              index=processing[3],
                              header=self.env_cls.header_row_list())
             if isinstance(processing[0], (int, list)):
-                processing_data[processing_data[
+                interim_data[interim_data[
                     processing[1]].isin(processing[0])]. \
                     to_excel(self.writer,
                              sheet_name=processing[2],

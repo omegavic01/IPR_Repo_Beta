@@ -370,26 +370,32 @@ class IpamDataProcessed(BaseIpamProcessing):
             header=["Clear VRF's"])
 
     def potential_update_processing(self, potential_df):
-        conflict_index_data = \
-            potential_df['Conflict Subnet Overlap - Index No.'].to_list(),
-        cleaned_conflict_list = []
-        for conflict_index in conflict_index_data[0]:
-            if not conflict_index:
+        # Preparing data that will be used for filtering.
+        temp_overlap_df = potential_df.copy()
+        overlap_nans_df = temp_overlap_df[temp_overlap_df['Conflict Subnet Overlap - Index No.'] == ''].index
+        temp_overlap_df.drop(overlap_nans_df, inplace=True)
+        indexs = temp_overlap_df['Index'].unique()
+
+        overlaps = potential_df['Conflict Subnet Overlap - Index No.'].unique()
+        conflicts = potential_df['Conflict Subnet - Index No.'].unique()
+        temp_indexs_list = list(set(overlaps.tolist() +
+                                    conflicts.tolist() +
+                                    indexs.tolist()))
+        temp_indexs_list = list(filter(None, temp_indexs_list))
+
+        conflict_indexs_list = []
+        for index in temp_indexs_list:
+            if isinstance(index, int):
+                conflict_indexs_list.append(index)
                 continue
-            elif isinstance(conflict_index, str):
-                cleaned_conflict_list = cleaned_conflict_list + \
-                                     list(map(int, conflict_index.split(",")))
-            else:
-                cleaned_conflict_list.append(conflict_index)
+            if isinstance(index, str):
+                conflict_indexs_list += list(map(int, index.split(', ')))
+        conflict_indexs_list = sorted(list(set(conflict_indexs_list)))
 
-        cleaned_conflict_list = list(set(cleaned_conflict_list))
-        cleaned_conflict_list.sort()
+        potential_update_df = potential_df[potential_df['Index'].isin(
+            conflict_indexs_list)]
 
-        # Need to figure out how to append the data versus overwriting to one line.
-        potential_update_df = pd.DataFrame()
-        for conflict_index in cleaned_conflict_list:
-            potential_update_df = potential_df.loc[(potential_df['Index'] == conflict_index)]
-        return potential_df
+        return potential_update_df
 
     def forecast_sheet_processing(self, forecast_df):
         forecast_df = forecast_df.drop(['Conflict Subnet Overlap - Index No.',

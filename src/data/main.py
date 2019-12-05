@@ -9,17 +9,19 @@ desktop application.  For external party use.
 """
 from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
-#from ipam_data_processing import IpamDataProcessed
 from ipam_processed_processing import IpamDataProcessed
 from ipam_interim_processing import IpamDataInterim
 from ipam_reports import IpamReports
 from builder import DirectoryValues, DataFileNames, Reader
+import time
 
 
-gather_current_ipam_data = False
-run_ipam_data_processing_interim = False
+gather_current_ipam_data = True
+run_ipam_data_processing_interim = True
 run_ipam_data_processing_processed = True
-run_ipam_reports = False
+run_ipam_reports = True
+
+start_time = time.perf_counter()
 """
 This grouping calls and pickles the IB data via IB's web api.
 
@@ -77,6 +79,8 @@ if run_ipam_reports:
     ipam_reports.generate_percent_report()
     ipam_reports.generate_forecast_percent_report()
 
+end_time = time.perf_counter()
+print(end_time - start_time)
 
 """
 Good place to debug network data from a network view.  This is not to be used 

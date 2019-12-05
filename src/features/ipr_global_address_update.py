@@ -1,6 +1,9 @@
 """
-The objective of this script is to update the Glboal Addresses for IPR <data>.xlsx
-with a two digit country code in column F.
+The objective of this script is to update the Global Addresses for
+IPR <data>.xlsx with a two digit country code in column F.
+
+The Abbreviations.xlsx file needs to be in the data\raw directory.  Source
+file is located in Teams-Internal.
 """
 import os
 import logging
@@ -56,7 +59,7 @@ def main():
 
     # Update IPR and UNO Data sources.
     abbreviation_data_filename = 'Abbreviations.xlsx'
-    global_addr_data_filename = 'Global Addresses for IPR 2019-04-30.xlsx'
+    global_addr_data_filename = 'Global Addresses for IPR 2019-05-01.xlsx'
 
     def compile_data():
         # Join file names to path's.

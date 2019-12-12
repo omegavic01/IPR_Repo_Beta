@@ -14,9 +14,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
-
 from collections import MutableMapping
 import logging
 from builder import DirectoryValues
@@ -29,7 +27,6 @@ from builder import Writer
 
 class BaseIpamProcessing:
     """Base class for ipam data processing."""
-
     def __init__(self):
         self._log_cls = LoggingValues()
         logging.basicConfig(filename=self._log_cls.log_filename(),
@@ -48,23 +45,24 @@ class BaseIpamProcessing:
         Method to convert input of nested dict's to a flattened dict
 
         default seperater '_'
-
         """
         items = []
         for key, value in data.items():
             new_key = parent_key + sep + key if parent_key else key
 
             if isinstance(value, MutableMapping):
-                items.extend(self._convert_flatten(
-                    value, new_key, sep=sep).items())
+                items.extend(
+                    self._convert_flatten(value, new_key, sep=sep).items())
             else:
                 items.append((new_key, value))
         return dict(items)
 
     def _flatten_data(self, data_to_be_flattened):
         """Method to flatten the requested data."""
-        return [self._convert_flatten(data_to_be_flattened[i])
-                for i in range(len(data_to_be_flattened))]
+        return [
+            self._convert_flatten(data_to_be_flattened[i])
+            for i in range(len(data_to_be_flattened))
+        ]
 
     def split_out_network(self, _df, column_to_split):
         """Method for splitting out a subnet and assigning to columns."""
@@ -81,8 +79,7 @@ class BaseIpamProcessing:
     def sort_df_by_oct_list(self, _df):
         """Method for sorting oct_list columns in ascending order."""
         return _df.sort_values(
-            self.oct_list(), ascending=[True, True, True, True, True]
-        )
+            self.oct_list(), ascending=[True, True, True, True, True])
 
     @staticmethod
     def oct_list():
@@ -94,7 +91,6 @@ class BaseIpamProcessing:
         """
         Loops through data and identifies a list.  If list then convert
         to a string seperated by a ;.
-
         """
         ea_updater = {}
         for key, value in data[0].items():
@@ -107,7 +103,6 @@ class BaseIpamProcessing:
         """
         Replaces the converted listed values to the source dataset values.
         This follows get_listed_values.
-
         """
         for key, value in updater_data.items():
             source_data.at[key, ea_att] = value

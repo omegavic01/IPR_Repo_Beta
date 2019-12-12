@@ -14,9 +14,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
-
 import time
 import pandas as pd
 from ipam_base_processing import BaseIpamProcessing
@@ -29,14 +27,12 @@ class IpamDataInterim(BaseIpamProcessing):
 
     To Write to xlsx when calling the method run_ipam_interim (default=False):
         write_to_xlsx=True
-
     """
 
     def run_ipam_interim(self, write_to_xlsx=False):
         """
         Method that runs through all of the interim processing steps.  Then
         writes the panda dataframe to excel and to a pickle file.
-
         """
         self._logger.info('Starting the interim process for the raw data.')
         start = time.perf_counter()
@@ -72,7 +68,6 @@ class IpamDataInterim(BaseIpamProcessing):
         """
         Gets the network and networkcontainer data.  Returns the two
         datasets as one list.
-
         """
         networks = self.reader_cls.read_from_pkl(
             self.dir_cls.raw_dir(),
@@ -86,7 +81,6 @@ class IpamDataInterim(BaseIpamProcessing):
         """
         Processes the ea_datacenter column.  To be have any lists converted
         to strings and seperated by a ;.
-
         """
         ea_value = 'extattrs_Datacenter_value'
         dc_data = [data[ea_value].to_dict()]
@@ -97,7 +91,6 @@ class IpamDataInterim(BaseIpamProcessing):
         """
         Processes the ea_ipr_designation column.  To convert any lists to
         strings and seperated by a ;.
-
         """
         ea_value = 'extattrs_IPR Designation_value'
         dc_data = [data[ea_value].to_dict()]
@@ -115,7 +108,6 @@ class IpamDataInterim(BaseIpamProcessing):
         3. Add oct1, oct2, oct3, oct4, and /Cidr columns.
         4. Sorting Data via line 2 values.
         5. Return Indexed data starting at 10000
-
         """
 
         net_flat_df = pd.DataFrame(raw_nets)

@@ -1,5 +1,20 @@
-"""Performs a diff and outputs the information for use by the import
-generator script."""
+#!/usr/bin/python
+"""
+Copyright 2007 HVictor
+Licensed to PSF under a Contributor Agreement.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+"""
 import os
 import logging
 from xlrd import open_workbook
@@ -19,8 +34,10 @@ def _write_output_to_master(diff_list, output_file):
 
 
 def main():
-    """Script that takes in two .xlsx files in IPR format.  Performs a diff
-    against them and generates an output .xlsx file."""
+    """
+    Script that takes in two .xlsx files in IPR format.  Performs a diff
+    against them and generates an output .xlsx file.
+    """
     logger = logging.getLogger('ipr_ddi_to_ddi_diff.py')
     logger.info('Beginning of Script')
     logger.info('Building Paths and Filenames')

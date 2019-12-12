@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,31 +18,35 @@ permissions and limitations under the License.
 
 import pickle
 import csv
+import os
 
 
 class Writer:
     """Class used to write data to specific types of files."""
-
     @staticmethod
     def write_to_pkl(file_dir, file_name, data):
-        """Method that takes the arg's and writes a .pkl file.
+        """
+        Method that takes the arg's and writes a .pkl file.
 
         args:
             file_dir: path to files location
             file_name: name of file to be opened
         """
-        with open(file_dir + "\\" + file_name, 'wb') as output:
+        file = os.path.join(file_dir, file_name)
+        with open(file, 'wb') as output:
             pickle.dump(data, output)
 
     @staticmethod
     def write_to_csv_w(file_dir, file_name, data):
-        with open(file_dir + '\\' + file_name, "w", newline='') as csv_file:
+        file = os.path.join(file_dir, file_name)
+        with open(file, "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
             writer.writerows(data)
 
     @staticmethod
     def write_to_csv_wb(file_dir, file_name, data):
-        with open(file_dir + '\\' + file_name, "wb", newline='') as csv_file:
+        file = os.path.join(file_dir, file_name)
+        with open(file, "wb", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
             writer.writerows(data)
 

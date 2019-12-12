@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +14,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
-
 import logging
 import json
 import time
@@ -26,11 +25,9 @@ from ipam_apirequest_calltypes import IpamCallTypes, IpamApiRequest
 
 
 class IpamGetsToWrite:
-    """Class contianing methods for making DDI call's."""
-
+    """Class containing methods for making DDI call's."""
     # pylint: disable = R0902
     # 11/7 (too-many-instance-attributes) Known and like it this way.
-
     def __init__(self):
         self._log_cls = LoggingValues()
         logging.basicConfig(filename=self._log_cls.log_filename(),
@@ -55,8 +52,8 @@ class IpamGetsToWrite:
 
         _ext_attr_data = json.loads(
             self.ext_call_setup_cls.ipam_api_request(
-                self.call_types_cls.extensible_attributes()).
-            text)
+                self.call_types_cls.extensible_attributes()).text)
+
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
                                     extensible_attributes_filename(),
@@ -64,8 +61,8 @@ class IpamGetsToWrite:
         self._logger.info('Ext Attr data written to .pkl file in Raw Dir.')
 
     def get_extensible_attributes_list_values(self):
-        """Requests the extensible attributes listed values defined within DDI.
-
+        """
+        Requests the extensible attributes listed values defined within DDI.
         """
         self._logger.info('Pulling current Extensible Attribute data.')
         _ext_attr_list_data = json.loads(
@@ -83,8 +80,8 @@ class IpamGetsToWrite:
         self._logger.info('Pulling current Network View Data.')
         _network_view_data = json.loads(
             self.ext_call_setup_cls.ipam_api_request(
-                self.call_types_cls.network_views()).
-            text)
+                self.call_types_cls.network_views()).text)
+
         self.write_cls.write_to_pkl(self.dir_cls.raw_dir(),
                                     self.filenames_cls.
                                     network_views_filename(),

@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +17,15 @@ permissions and limitations under the License.
 """
 
 import pickle
+import os
 
 
 class Reader:
     """Class to be used for reading specific types of files."""
-
     @staticmethod
     def read_from_pkl(file_dir, file_name):
-        """Method that takes the arg's and reads a .pkl file.  Then returns
+        """
+        Method that takes the arg's and reads a .pkl file.  Then returns
         the data opened.
 
         args:
@@ -32,12 +34,14 @@ class Reader:
         returns:
             -The data from the pickled file.
         """
-        with open(file_dir + "\\" + file_name, 'rb') as file_input:
+        file = os.path.join(file_dir, file_name)
+        with open(file, 'rb') as file_input:
             return pickle.load(file_input)
 
     @staticmethod
     def read_from_csv(file_dir, file_name):
-        """Method that takes the arg's and reads a .csv file.  Then returns
+        """
+        Method that takes the arg's and reads a .csv file.  Then returns
         the data read.
 
         STILL IN DEVELOPMENT!
@@ -52,7 +56,8 @@ class Reader:
 
     @staticmethod
     def read_from_xlsx(file_dir, file_name):
-        """Method that takes the arg's and reads a .xlsx file.  Then returns
+        """
+        Method that takes the arg's and reads a .xlsx file.  Then returns
         the data read.
 
         STILL IN DEVELOPMENT!

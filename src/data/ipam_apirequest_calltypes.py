@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +14,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
-
 import logging
 import time
 import requests
@@ -32,7 +31,6 @@ class IpamApiRequest:
     """IPAM API Call Definition."""
     # pylint: disable = R0903
     # This class is just meant to house the api construct.
-
     def __init__(self):
         self._env_cls = EnvironmentValues()
         self._log_cls = LoggingValues()
@@ -46,7 +44,8 @@ class IpamApiRequest:
         self._logger = logging.getLogger(__name__)
 
     def ipam_api_request(self, _):
-        """IPAM API Call.
+        """
+        IPAM API Call.
 
         Args:
             self._item: The missing puzzle piece needed for the api call.  The
@@ -54,7 +53,6 @@ class IpamApiRequest:
         Returns:
             The requests content decoded to 'utf-8' then returns as a python
             object after going through a json.loads process.
-
         """
         try_call_countdown = 3
         net_call = None
@@ -86,7 +84,6 @@ class IpamApiRequest:
 
 class IpamCallTypes:
     """Defined call types needed for the api calls."""
-
     @staticmethod
     def extensible_attributes():
         """Returns the fields needed for an extensible attributes ipam call."""

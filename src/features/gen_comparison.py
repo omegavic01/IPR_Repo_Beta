@@ -1,3 +1,21 @@
+#!/usr/bin/python
+"""
+Copyright 2007 HVictor
+Licensed to PSF under a Contributor Agreement.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+"""
+
 """
 Objective:
     After manually updating the below fields needed for proper comparison.
@@ -16,7 +34,7 @@ from dotenv import find_dotenv, load_dotenv
 
 def _write_output_to_master(diff_list, mod_file, output_file):
     """
-        Write Output
+    Write Output
     """
     w_b = openpyxl.load_workbook(filename=mod_file)
     w_s = w_b.create_sheet('Not in DDI', 2)
@@ -29,7 +47,6 @@ def _write_output_to_master(diff_list, mod_file, output_file):
 
 def main_phase_2(ipr_src_file, ipr_src_mod_file, output_file, logger):
     """
-
     :param ipr_src_file:
     :param ipr_src_mod_file:
     :param output_file:
@@ -77,7 +94,7 @@ def main_phase_2(ipr_src_file, ipr_src_mod_file, output_file, logger):
 
 def main():
     """
-        Script that takes in two .xlsx files in IPR format.  Performs a diff
+    Script that takes in two .xlsx files in IPR format.  Performs a diff
     against them and generates output to a separate sheet within mod file.
     """
     logger = logging.getLogger('gen_comparison.py')

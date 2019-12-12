@@ -1,5 +1,20 @@
-"""Module used in conjunction with ipr_ddi_to_ddi_diff.py.  With the objective
-of converting the updates identified into an import sheets for DDI."""
+#!/usr/bin/python
+"""
+Copyright 2007 HVictor
+Licensed to PSF under a Contributor Agreement.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+"""
 import os
 import time
 import json
@@ -18,8 +33,8 @@ from agency_vrf_view_libs import ReadLibraries
 
 
 def cidr_to_netmask(cidr):
-    """Function that takes a two digit network mask and converts to a subnet
-    mask
+    """
+    Function that takes a two digit network mask and converts to a subnet mask.
 
     Return Value:
         -- netmask
@@ -53,7 +68,8 @@ def _write_output_for_add_csv(data, file):
                 # Check for comments
                 if stuff[12]:
                     if '\n' in stuff[12]:
-                        temp_data.append(stuff[12].replace('\n', ',').strip(','))
+                        temp_data.append(
+                            stuff[12].replace('\n', ',').strip(','))
                         temp_header.append('comment')
                     else:
                         temp_data.append(stuff[12])
@@ -419,8 +435,10 @@ def _write_output_for_override_blanks_csv(data, file):
 
 
 def _get_view_index(views, ddi_data):
-    """Takes a compiled list of views and assigns an index in a dictionary as
-    indexed by the list of ddi data returned."""
+    """
+    Takes a compiled list of views and assigns an index in a dictionary as
+    indexed by the list of ddi data returned.
+    """
     views_index_temp = {}
     for view in views:
         for enum, ddi_line in enumerate(ddi_data):
@@ -445,8 +463,10 @@ def _get_ea_index():
 
 
 def _get_rekey_ddi_data(ddi_data):
-    """Takes a list of lists of dict's and converts to a list of dict's, of
-    dicts.  As well as rekey's the dict's with the network address."""
+    """
+    Takes a list of lists of dict's and converts to a list of dict's, of
+    dicts.  As well as rekey's the dict's with the network address.
+    """
     for enum, item in enumerate(ddi_data):
         ddi_data[enum] = dict((d['network'],
                                dict(d, index=index))
@@ -455,9 +475,7 @@ def _get_rekey_ddi_data(ddi_data):
 
 
 def _get_ea_listed_values(ea_raw_data):
-    """Parses raw ipam data and returns the values in listed format.
-
-    """
+    """Parses raw ipam data and returns the values in listed format."""
     ea_list_values_dict = {}
     for ea in ea_raw_data:
         if ea['type'] == 'ENUM' and ea['name'] in \
@@ -708,7 +726,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
 
 
 def api_call_network_views(view, logger):
-    """DDI api call for networks within the 'view' value .  Returns the utf-8
+    """
+    DDI api call for networks within the 'view' value .  Returns the utf-8
     decoded with a json load.
 
         Return Variables:
@@ -740,7 +759,8 @@ def api_call_network_views(view, logger):
 
 
 def api_call_networkcontainer_views(view, logger):
-    """DDI api call for network containers within the 'view' value.  Returns
+    """
+    DDI api call for network containers within the 'view' value.  Returns
     the utf-8 decoded with a json load.
 
         Return Variables:
@@ -773,7 +793,8 @@ def api_call_networkcontainer_views(view, logger):
 
 
 def get_ea_attributes(path, logger):
-    """Queries DDI for the Extensible Attributes and then extracts the data.
+    """
+    Queries DDI for the Extensible Attributes and then extracts the data.
     Also the first attempt at connecting to IPAM.  Built in some error
     checking to report on status of connectivity.
 
@@ -807,7 +828,8 @@ def get_ea_attributes(path, logger):
 
 
 def get_ddi_ip_data(net_views, ea_path, ddi_path, logger):
-    """Takes in the following arguments and queries IPAM by each network view.
+    """
+    Takes in the following arguments and queries IPAM by each network view.
 
         Output:
         ddi_data.pkl

@@ -1,4 +1,5 @@
-"""IP Validation check.  Fundamental checks for:
+"""
+IP Validation check.  Fundamental checks for:
 
     1. Whether or not a cidr is listed within the cidr field.
     2. Cidr blocks larger than a /13
@@ -12,7 +13,8 @@ import logging
 
 
 def out_log(loggs, logfile):
-    """Updates log file:
+    """
+    Updates log file:
 
         Log File name:
         -- validation check log.txt
@@ -24,7 +26,8 @@ def out_log(loggs, logfile):
 
 
 def validation_check(check, logfile):
-    """Performs the following actions:
+    """
+    Performs the following actions:
 
     1. Checks to make sure there is a "/" within network address.
     2. Checks for leading zero's within each octet of the network address.

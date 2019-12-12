@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Copyright 2007 HVictor
+"""
+Copyright 2007 HVictor
 Licensed to PSF under a Contributor Agreement.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
 
 import os
@@ -23,12 +23,11 @@ from dotenv import find_dotenv, load_dotenv
 
 
 class EnvironmentValues:
-    """Loads the .env file and assigns the values so that the values may be
+    """
+    Loads the .env file and assigns the values so that the values may be
     called.
-
     """
     load_dotenv(find_dotenv())
-
     def __init__(self):
         self._ddi_payload = {
             'url': os.environ.get("DDI_URL"),
@@ -75,15 +74,14 @@ class EnvironmentValues:
 
 
 class DirectoryValues:
-    """Builds the commonly used directories for the project.
+    """
+    Builds the commonly used directories for the project.
 
     The static methods are for the initializer in building of the directory
     paths.
 
     The methods are for the client to call as needed.
-
     """
-
     def __init__(self):
         self._project_dir = Path(__file__).resolve().parents[3]
         self._raw_data_path = os.path.join(self._project_dir,
@@ -164,7 +162,6 @@ class LoggingValues:
 
 class DataFileNames:
     """Place to store filenames."""
-
     @staticmethod
     def ipam_dump_interim_xlsx():
         """Interim spreadhseet name."""
@@ -256,9 +253,14 @@ class DataFileNames:
         return 'vrf_to_view_lib.pkl'
 
     @staticmethod
-    def src_global_addresses():
-        """Returns source filename for global addresses."""
+    def src_global_street_addresses():
+        """Returns source filename for global street addresses."""
         return 'Global Addresses for IPR 2019-05-01.xlsx'
+
+    @staticmethod
+    def src_country_abbreviations():
+        """Returns source filename for country abbreviations."""
+        return 'Abbreviations.xlsx'
 
     @staticmethod
     def global_addresses_lib():

@@ -14,10 +14,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License.
-
 """
-
 import time
+import os
 from collections import OrderedDict
 from ipaddr import IPv4Network
 from netaddr import IPNetwork
@@ -29,13 +28,14 @@ from ipam_base_processing import BaseIpamProcessing
 
 class IpamDataProcessed(BaseIpamProcessing):
     """Processing phase of the IPAM data."""
-
     def __init__(self):
         BaseIpamProcessing.__init__(self)
 
         # Pulls in interim data file for processing.
-        self.workbook_file = self.dir_cls.processed_dir() + '\\' + \
+        self.workbook_file = os.path.join(
+            self.dir_cls.processed_dir(),
             self.filename_cls.processed_filename()
+        )
 
         # Builds pandas writer object.
         self.writer = pd.ExcelWriter(self.workbook_file, engine='xlsxwriter')
@@ -44,7 +44,6 @@ class IpamDataProcessed(BaseIpamProcessing):
         """
         Method that runs through all of the interim processing steps.  Then
         writes the panda dataframe to excel and to a pickle file.
-
         """
         self._logger.info('Starting the final step in data processing.')
         start = time.perf_counter()
@@ -147,14 +146,12 @@ class IpamDataProcessed(BaseIpamProcessing):
                                 overlaps.
             str(m_dict_conflict): list(indexes of the key(subnet) that
                                 conflicts.
-
         """
 
         """
         Builds a list with all the subnets and indexes in the following format:
                 <class 'tuple'>: ('10.0.0.0/16', 10001)
                 <class 'tuple'>: ('10.0.0.0/22', 10002)
-
         """
         cidr_index_zip = list(zip(
             conflict_overlap_check_df['IPv4 Subnet'].to_list(),
@@ -207,7 +204,6 @@ class IpamDataProcessed(BaseIpamProcessing):
         """
         Function to build out the summary dataframe with the identified
         information gathered from the _conflict_overlap_check function call.
-
         """
 
         # Adds new columns to the summary dataframe.
@@ -372,7 +368,9 @@ class IpamDataProcessed(BaseIpamProcessing):
     def potential_update_processing(self, potential_df):
         # Preparing data that will be used for filtering.
         temp_overlap_df = potential_df.copy()
-        overlap_nans_df = temp_overlap_df[temp_overlap_df['Conflict Subnet Overlap - Index No.'] == ''].index
+        overlap_nans_df = temp_overlap_df[
+            temp_overlap_df[
+                'Conflict Subnet Overlap - Index No.'] == ''].index
         temp_overlap_df.drop(overlap_nans_df, inplace=True)
         indexs = temp_overlap_df['Index'].unique()
 
@@ -419,7 +417,6 @@ class IpamDataProcessed(BaseIpamProcessing):
         This method takes a copy of the full dataframe.  Processes it and
         returns the mashed data for writing the Summary and Uncategorized
         Sheet.
-
         """
 
         # Building out dataset for summary and uncategorized processing.

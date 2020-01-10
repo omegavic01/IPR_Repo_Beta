@@ -502,6 +502,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
 
     def _add_and_del():
         """Handles the add's and del import's."""
+        del_list = ['del']
         for add_or_del_row in src_data:
             # Add Check.
             if 'add' in add_or_del_row[0]:
@@ -519,13 +520,13 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     continue
 
             # delete check
-            if 'del' in add_or_del_row[0] and add_or_del_row[1] in \
+            if add_or_del_row[0] in del_list and add_or_del_row[1] in \
                     ddi_data[views_index[add_or_del_row[15]]]:
                 import_delete.append([add_or_del_row[15],
                                       add_or_del_row[1],
                                       add_or_del_row[14]])
                 continue
-            elif 'del' in add_or_del_row[0] and add_or_del_row[1] not in \
+            elif add_or_del_row[0] in del_list and add_or_del_row[1] not in \
                     ddi_data[views_index[add_or_del_row[15]]]:
                 add_or_del_row[16] = 'Missing network in ipam db.'
                 errored_list.append(add_or_del_row)
@@ -912,7 +913,7 @@ def main():
 
     # Build File and File path.
     src_file = os.path.join(processed_data_path,
-                            'BC add 2019-09-11.xlsx')
+                            'IP 20190829 20200109 Diff.xlsx')
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')

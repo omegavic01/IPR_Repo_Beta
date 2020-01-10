@@ -39,14 +39,14 @@ class Writer:
     @staticmethod
     def write_to_csv_w(file_dir, file_name, data):
         file = os.path.join(file_dir, file_name)
-        with open(file, "w", newline='') as csv_file:
+        with open(file, "w", newline='', encoding='utf-8') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
             writer.writerows(data)
 
     @staticmethod
     def write_to_csv_wb(file_dir, file_name, data):
         file = os.path.join(file_dir, file_name)
-        with open(file, "wb", newline='') as csv_file:
+        with open(file, "wb", newline='', encoding='utf-8') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
             writer.writerows(data)
 

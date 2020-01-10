@@ -47,11 +47,11 @@ def main():
 
     # Join file names to path's.
     ipr_src_file = os.path.join(interim_data_path,
-                                'IPAM-to-IPR.xlsx')
+                                'IPAM-to-IPR-20200109.xlsx')
     ipr_src_mod_file = os.path.join(interim_data_path,
-                                    'DDI_to_IPR modded.xlsx')
+                                    'IP 20190829 Diff.xlsx')
     output_file = os.path.join(processed_data_path,
-                               'Update Diff.xlsx')
+                               'IP 20190829 20200109 Diff.xlsx')
 
     logger.info('Loading Data')
     # Original Dataset Check Sheet index

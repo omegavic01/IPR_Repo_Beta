@@ -10,6 +10,7 @@ import struct
 import re
 import logging
 from xlrd import open_workbook
+import xlsxwriter
 import requests
 from dotenv import find_dotenv, load_dotenv
 from builder import DataFileNames, DirectoryValues
@@ -28,6 +29,189 @@ def cidr_to_netmask(cidr):
     host_bits = 32 - int(net_bits)
     netmask = socket.inet_ntoa(struct.pack('!I', (1 << 32) - (1 << host_bits)))
     return netmask
+
+
+def compare(first, second):
+    return sorted(first) == sorted(second)
+
+
+def _write_output_for_import_report_xlsx(
+        data, ddi_data, views_indx, report_file):
+    """Reference to the site that was used for the below for loop:
+
+    URL:
+    https://stackoverflow.com/questions/44593705/how-to-copy-over-an-excel-
+    sheet-to-another-workbook-in-python
+    """
+    workbook = xlsxwriter.Workbook(report_file)
+    worksheet = workbook.add_worksheet('Updates')
+    header_format = workbook.add_format()
+    header_format.set_align('center')
+    header_format.set_bold()
+    worksheet.autofilter(0, 0, 0, len(PAYLOAD['header'].split(',')))
+    worksheet.freeze_panes(1, 0)
+    cell_format = workbook.add_format()
+    cell_format.set_pattern(1)
+    cell_format.set_bg_color('yellow')
+
+    for column, value in enumerate(PAYLOAD['header'].split(',')):
+        # print(column, value)
+        worksheet.write_string(0, column, value, header_format)
+
+    # Add updates.
+    for row, line in enumerate(data['add']):
+        for column, value in enumerate(line):
+            # print(column, value)
+            worksheet.write_string(row + 1, column, value)
+
+    # Del updates.
+    for row, line in enumerate(data['del']):
+        for column, value in enumerate(line):
+            # print(column, value)
+            worksheet.write_string(len(data['add']) + row + 2, column, value)
+
+    # Modified updates.
+    for row, line in enumerate(data['final_update']):
+        ddi_structure = ['', '', '', '', '',
+                         '', '', '', '', '',
+                         '', '', '', '', '',
+                         '', '']
+        for idx, item in enumerate(ddi_structure):
+            if idx == 0:
+                continue
+            if idx == 1:
+                ddi_structure[1] = \
+                    ddi_data[views_indx[line[15]]][line[1]]['network']
+                continue
+            if idx == 2 and 'Region_List' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Region_List']['value']
+                continue
+            if idx == 3 and 'Country' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Country']['value']
+                continue
+            if idx == 4 and 'City' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['City']['value']
+                continue
+            if idx == 5 and 'Address' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Address']['value']
+                continue
+            if idx == 6 and 'Site' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Site']['value']
+                continue
+            if idx == 7 and 'Datacenter' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                if isinstance(
+                        ddi_data[views_indx[line[15]]][line[1]]
+                        ['extattrs']['Datacenter']['value'], list):
+                    ddi_structure[idx] = \
+                        ', '.join(map(str, ddi_data[
+                            views_indx[line[15]]][line[1]][
+                            'extattrs']['Datacenter']['value']))
+                else:
+                    ddi_structure[idx] = \
+                        ddi_data[views_indx[line[15]]][line[1]][
+                            'extattrs']['Datacenter']['value']
+                continue
+            if idx == 8 and 'Division' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Division']['value']
+                continue
+            if idx == 9 and 'Req Email' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Req Email']['value']
+                continue
+            if idx == 10 and 'Agency' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Agency']['value']
+                continue
+            if idx == 11 and 'VLAN Description' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['VLAN Description']['value']
+                continue
+            if idx == 12 and 'comment' in \
+                    ddi_data[views_indx[line[15]]][line[1]]:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]]['comment']
+                continue
+            if idx == 13 and 'Interface Name' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'extattrs']['Interface Name']['value']
+                continue
+            if idx == 14:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        '_ref'].split('/')[0]
+                continue
+            if idx == 15:
+                ddi_structure[idx] = \
+                    ddi_data[views_indx[line[15]]][line[1]][
+                        'network_view']
+                continue
+            if idx == 16 and 'IPR Designation' in \
+                    ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
+                if isinstance(
+                        ddi_data[views_indx[line[15]]][line[1]]
+                        ['extattrs']['IPR Designation']['value'], list):
+                    ddi_structure[idx] = \
+                        ', '.join(map(str, ddi_data[
+                            views_indx[line[15]]][line[1]][
+                            'extattrs']['IPR Designation']['value']))
+                else:
+                    ddi_structure[idx] = \
+                        ddi_data[views_indx[line[15]]][line[1]][
+                            'extattrs']['IPR Designation']['value']
+                continue
+
+        internal_row = \
+            3 + \
+            len(data['add']) + \
+            len(data['del']) + \
+            row + 2 * row
+        for column, value in enumerate(line):
+            # Write IPAM data.
+            worksheet.write_string(
+                internal_row,
+                column,
+                ddi_structure[column])
+            # Write modified data.
+            if compare(value, ddi_structure[column]):
+                worksheet.write_string(
+                    internal_row + 1,
+                    column,
+                    value)
+            else:
+                worksheet.write_string(
+                    internal_row + 1,
+                    column,
+                    value,
+                    cell_format)
+
+    workbook.close()
 
 
 def _write_output_for_add_csv(data, file):
@@ -484,6 +668,10 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
         -- import_override_to_blank - data set to go through an override import
     """
 
+    def _build_report_index():
+        for ipam_line in src_data:
+            import_report_index.append([ipam_line[1], ipam_line[15]])
+
     def _add_and_del():
         """Handles the add's and del import's."""
         for add_or_del_row in src_data:
@@ -492,6 +680,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 if add_or_del_row[15] in ddi_views and \
                                 add_or_del_row[15] not in views_index:
                     import_add.append(add_or_del_row)
+                    import_report_data['add'].append(add_or_del_row)
                     continue
                 if add_or_del_row[1] in \
                         ddi_data[views_index[add_or_del_row[15]]]:
@@ -500,6 +689,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     continue
                 else:
                     import_add.append(add_or_del_row)
+                    import_report_data['add'].append(add_or_del_row)
                     continue
 #            else:
 #                if add_or_del_row[1] not in \
@@ -510,6 +700,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             # delete check
             if 'del' in add_or_del_row[0] and add_or_del_row[1] in \
                     ddi_data[views_index[add_or_del_row[15]]]:
+                import_report_data['del'].append(add_or_del_row)
                 import_delete.append([add_or_del_row[15],
                                       add_or_del_row[1],
                                       add_or_del_row[14]])
@@ -538,6 +729,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             if disposition_row[0] in ea_listed_values['IPR Designation'] and \
                     'IPR Designation' not in \
                     ddi_data[ddi_index][disposition_row[1]]['extattrs']:
+                import_report_data['update'].append(disposition_row)
                 import_merge_disposition.append(
                     [disposition_row[15],
                      disposition_row[1],
@@ -559,6 +751,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             # empty ddi data value.
             if 'comment' not in ddi_data[ddi_index][comment_row[1]] and \
                     comment_row[12] != '':
+                import_report_data['update'].append(comment_row)
                 import_merge.append([comment_row[15],
                                      comment_row[1],
                                      comment_row[14],
@@ -568,6 +761,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             # ddi data and replaces with src value.
             if comment_row[12] != \
                     ddi_data[ddi_index][comment_row[1]]['comment']:
+                import_report_data['update'].append(comment_row)
                 import_override.append([comment_row[15],
                                         comment_row[1],
                                         comment_row[14],
@@ -594,6 +788,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 # empty ddi data value.
                 if key not in ddi_data[ddi_index][ea_row[1]]['extattrs'] \
                         and ea_row[value] not in ['', 'DDI']:
+                    import_report_data['update'].append(ea_row)
                     import_merge.append([ea_row[15],
                                          ea_row[1],
                                          ea_row[14],
@@ -604,6 +799,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 if ea_row[value] != \
                         ddi_data[ddi_index][
                             ea_row[1]]['extattrs'][key]['value']:
+                    import_report_data['update'].append(ea_row)
                     import_override.append([ea_row[15],
                                             ea_row[1],
                                             ea_row[14],
@@ -657,28 +853,27 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                             ea_row[ea_index[key]] in \
                             ea_listed_values[key]:
                         ipr_temp_list.append(ea_row[ea_index[key]])
-                    else:
-                        import_override.append([ea_row[15].strip(),
-                                                ea_row[1].strip(),
-                                                ea_row[14].strip(),
-                                                {key: ea_row[ea_index[key]]}])
-                        continue
+
                     # Remove blank elements from list.
                     ipr_temp_list = [x for x in ipr_temp_list if x]
 
                     # If in IPR and no key listed in IPAM data.
                     if ea_row[1] == '192.168.0.0':
                         print('myvar: {}'.format(ea_row[1]))
+
+                    # If no data in IPAM but new data received.
                     if key not in \
                             ddi_data[ddi_index][ea_row[1]]['extattrs'] \
                             and ipr_temp_list:
                         if len(ipr_temp_list) > 1:
+                            import_report_data['update'].append(ea_row)
                             import_override.append([ea_row[15].strip(),
                                                     ea_row[1].strip(),
                                                     ea_row[14].strip(),
                                                     {key: ','.join(
                                                         ipr_temp_list)}])
                         else:
+                            import_report_data['update'].append(ea_row)
                             import_override.append([ea_row[15].strip(),
                                                     ea_row[1].strip(),
                                                     ea_row[14].strip(),
@@ -697,34 +892,16 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                         ipam_temp_list.append(ddi_data[ddi_index][
                                                   ea_row[1]]['extattrs'][
                                                   key]['value'])
+
                     # Check for diff between listed sets.
-                    in_ipam_not_ipr = diff(ipam_temp_list, ipr_temp_list)
-                    in_ipr_not_ipam = diff(ipr_temp_list, ipam_temp_list)
-                    if in_ipam_not_ipr:
-                        if len(ipam_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipam_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipam_temp_list[0]}])
-                        continue
-                    if in_ipr_not_ipam:
-                        if len(ipr_temp_list) > 1:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ','.join(
-                                                        ipr_temp_list)}])
-                        else:
-                            import_override.append([ea_row[15].strip(),
-                                                    ea_row[1].strip(),
-                                                    ea_row[14].strip(),
-                                                    {key: ipr_temp_list[0]}])
+                    in_ipr_not_ipam = compare(ipr_temp_list, ipam_temp_list)
+                    if not in_ipr_not_ipam:
+                        import_report_data['update'].append(ea_row)
+                        import_override.append([ea_row[15].strip(),
+                                                ea_row[1].strip(),
+                                                ea_row[14].strip(),
+                                                {key: ','.join(
+                                                    ipr_temp_list)}])
                         continue
 
     # Local scope variables.
@@ -733,6 +910,12 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
     import_merge = []
     import_override = []
     import_merge_disposition = []
+    import_report_index = []
+    import_report_data = {
+        'add': [],
+        'del': [],
+        'update': [],
+        'final_update': []}
     unused_list = []
     errored_list = []
     # EA Listed (ENUM) attribute values.
@@ -741,16 +924,22 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                       filenames_cls.
                       extensible_attributes_list_values_filename())
     ea_listed_values = _get_ea_listed_values(ea_listed_values_raw)
+
+    _build_report_index()
     _add_and_del()
     _ea_in_disposition_col0_and_empty_ipr_d_col()
     _comment_check()
     _non_listed_ea_columns_check()
     _listed_ea_column_check()
+    for stuff in import_report_data['update']:
+        if stuff not in import_report_data['final_update']:
+            import_report_data['final_update'].append(stuff)
     return import_add, \
         import_delete, \
         import_merge_disposition, \
         import_merge, \
-        import_override
+        import_override, \
+        import_report_data
 
 
 def api_call_network_views(view, logger):
@@ -940,8 +1129,8 @@ def main():
     ddi_api_call = False
 
     # Build File and File path.
-    src_file = os.path.join(processed_data_path,
-                            '20190815 full modded - Copy - Copy.xlsx')
+    src_file_name = 'IPAM Updates 20200113 DAS.xlsx'
+    src_file = os.path.join(processed_data_path, src_file_name)
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
     add_file = os.path.join(reports_data_path, 'Add Import.csv')
@@ -950,6 +1139,8 @@ def main():
                                     'Merge Disposition Import.csv')
     delete_file = os.path.join(reports_data_path, 'Delete Import.csv')
     override_file = os.path.join(reports_data_path, 'Override Import.csv')
+    report_file = os.path.join(reports_data_path, 'Import Report' + ' ' +
+                               src_file_name)
 
     vrf_to_view = read_lib_cls.read_vrf_to_view()
     agencies = read_lib_cls.read_agency_list()
@@ -1059,7 +1250,7 @@ def main():
     ea_index = _get_ea_index()
 
     # Building data sets for in preparation for writing.
-    add, delete, disposition, merge, override = \
+    add, delete, disposition, merge, override, report = \
         _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views)
 
     # Send data off to be written.
@@ -1074,6 +1265,12 @@ def main():
         _write_output_for_override_csv(override, override_file)
     if disposition:
         _write_output_for_merge_disposition_csv(disposition, disposition_file)
+    if report:
+        _write_output_for_import_report_xlsx(
+            report,
+            ddi_data,
+            views_index,
+            report_file)
 
 
 if __name__ == '__main__':
@@ -1094,7 +1291,8 @@ if __name__ == '__main__':
     PAYLOAD = {
         'url': os.environ.get("DDI_URL"),
         'username': os.environ.get("DDI_USERNAME"),
-        'password': os.environ.get("DDI_PASSWORD")
+        'password': os.environ.get("DDI_PASSWORD"),
+        'header': os.environ.get("IPR_HEADER_ROW_LIST")
     }
     write = Writer()
     dir_cls = DirectoryValues()

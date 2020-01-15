@@ -85,6 +85,8 @@ data/processed/Old Data/*.*
 data/raw/*.*
 data/*.*
 reports/*.*
+reports/2019 Data/*.*
+reports/2020 Data/*.*
 src/data/*.txt
 src/features/*.txt
 src/data/*.ipynb
@@ -104,6 +106,8 @@ src/features/*.ipynb
 /docs
 /models
 /reports/figures
+/reports/2019 Data
+/reports/2020 Data
 /notebooks
 /references
 /src/models

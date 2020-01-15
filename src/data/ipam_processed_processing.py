@@ -258,6 +258,11 @@ class IpamDataProcessed(BaseIpamProcessing):
 
     def _tweak_and_save_workbook(self):
         workbook = self.writer.book
+        for worksheet_str in workbook.sheetnames.keys():
+            worksheet = self.writer.sheets[worksheet_str]
+            worksheet.autofilter(0, 0, 0, worksheet.dim_colmax)
+            worksheet.freeze_panes(1, 0)
+
         worksheet_summary = self.writer.sheets['Summary']
         left = workbook.add_format({'align': 'left'})
         worksheet_summary.set_column('W:Y', None, left)

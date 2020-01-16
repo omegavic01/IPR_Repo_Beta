@@ -261,7 +261,7 @@ class IpamDataProcessed(BaseIpamProcessing):
         for worksheet_str in workbook.sheetnames.keys():
             worksheet = self.writer.sheets[worksheet_str]
             worksheet.autofilter(0, 0, 0, worksheet.dim_colmax)
-            worksheet.freeze_panes(1, 0)
+            worksheet.freeze_panes(1, 2)
 
         worksheet_summary = self.writer.sheets['Summary']
         left = workbook.add_format({'align': 'left'})

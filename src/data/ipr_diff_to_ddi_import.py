@@ -1140,7 +1140,7 @@ def main():
     reports_data_path = os.path.join(PROJECT_DIR, 'reports')
 
     # Build File and File path.
-    src_file_name = 'IPAM Updates 20200113.xlsx'
+    src_file_name = 'IPAM-to-IPR-20200116 - Full Modded - JE - Diff.xlsx'
     src_file = os.path.join(processed_data_path, src_file_name)
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')

@@ -563,9 +563,10 @@ class IpamDataProcessed(BaseIpamProcessing):
         forecast_df.to_excel(self.writer,
                              sheet_name='Summary_Forecast',
                              index=False)
-        self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
-                                     self.filename_cls.master_df_filename(),
-                                     forecast_df)
+        self.writer_cls.write_to_pkl(
+            self.dir_cls.raw_dir(),
+            self.filename_cls.summary_forecast_df_filename(),
+            forecast_df)
 
         # Builds potential update tab utilizing data from the forecast_df.
         potential_update_df = self.potential_update_processing(forecast_df)
@@ -573,9 +574,10 @@ class IpamDataProcessed(BaseIpamProcessing):
         potential_update_df.to_excel(self.writer,
                                      sheet_name='Potential_Updates',
                                      index=False)
-        self.writer_cls.write_to_pkl(self.dir_cls.raw_dir(),
-                                     self.filename_cls.master_df_filename(),
-                                     potential_update_df)
+        self.writer_cls.write_to_pkl(
+            self.dir_cls.raw_dir(),
+            self.filename_cls.potential_updates_df_filename(),
+            potential_update_df)
 
         # A nested list of attributes used for spreadsheet tab creation.
         processing_data_worksheets = [

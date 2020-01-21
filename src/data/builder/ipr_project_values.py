@@ -311,3 +311,13 @@ class DataFileNames:
     def full_dataset_df_filename():
         """Returns source filename for global addresses."""
         return 'full_dataset.pkl'
+
+    @staticmethod
+    def summary_forecast_df_filename():
+        """Returns source filename for global addresses."""
+        return 'summary_forecast.pkl'
+
+    @staticmethod
+    def potential_updates_df_filename():
+        """Returns source filename for global addresses."""
+        return 'potential_updates.pkl'

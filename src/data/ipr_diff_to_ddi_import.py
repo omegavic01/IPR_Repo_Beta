@@ -1140,7 +1140,7 @@ def main():
     reports_data_path = os.path.join(PROJECT_DIR, 'reports')
 
     # Build File and File path.
-    src_file_name = 'IPAM-to-IPR-20200116 - Full Modded - JE - Diff.xlsx'
+    src_file_name = 'IPAM-to-IPR-20191002 - MODDED FULL - JE (1).xlsx - Diff.xlsx'
     src_file = os.path.join(processed_data_path, src_file_name)
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
@@ -1208,22 +1208,25 @@ def main():
             src_list.append(cleaning_data)
 
         # Clean's src_list values.
-        # Removes errored agencies.
+        # Removes erred agencies.
         for enum, row in enumerate(src_list):
             if row[10] in agencies:
                 continue
             else:
                 src_list[enum][10] = ''
-        # Revmoes tab's that may have been incorrectly inserted.
+        # Removes tab's that may have been incorrectly inserted.
         src_list = [[item.replace('\t', '') for item in row
                      if isinstance(item, str)]
                     for row in src_list]
+        # Removes character returns
         src_list = [[item.replace('\n', ', ') for item in row
                      if isinstance(item, str)]
                     for row in src_list]
+        # Converts ", ," to ", "
         src_list = [[item.replace(', ,', ', ') for item in row
                      if isinstance(item, str)]
                     for row in src_list]
+        # .strips string elements.
         src_list = [[item.strip() for item in row
                      if isinstance(item, str)]
                     for row in src_list]

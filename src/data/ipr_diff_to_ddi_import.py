@@ -148,11 +148,11 @@ def _write_output_for_import_report_xlsx(
                     ddi_data[views_indx[line[15]]][line[1]][
                         'extattrs']['Division']['value']
                 continue
-            if idx == 9 and 'Req Email' in \
+            if idx == 9 and 'Requester Email' in \
                     ddi_data[views_indx[line[15]]][line[1]]['extattrs']:
                 ddi_structure[idx] = \
                     ddi_data[views_indx[line[15]]][line[1]][
-                        'extattrs']['Req Email']['value']
+                        'extattrs']['Requester Email']['value']
                 continue
             if idx == 10 and 'Agency' in \
                     ddi_data[views_indx[line[15]]][line[1]]['extattrs']:

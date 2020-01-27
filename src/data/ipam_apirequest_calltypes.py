@@ -129,3 +129,29 @@ class IpamCallTypes:
                "utilization&" \
                "network_view=" + view + \
                "&_max_results=-25000"
+
+    @staticmethod
+    def ipv6_networks(view):
+        """Returns the fields needed from networks ipam call."""
+        return "ipv6network?" \
+               "_return_fields=" \
+               "extattrs," \
+               "comment," \
+               "network," \
+               "network_view," \
+               "utilization&" \
+               "network_view=" + view + \
+               "&_max_results=-25000"
+
+    @staticmethod
+    def ipv6_networkcontainers(view):
+        """Returns the fields needed from networkcontainers ipam call."""
+        return "ipv6networkcontainer?" \
+               "_return_fields=" \
+               "extattrs," \
+               "comment," \
+               "network," \
+               "network_view," \
+               "utilization&" \
+               "network_view=" + view + \
+               "&_max_results=-25000"

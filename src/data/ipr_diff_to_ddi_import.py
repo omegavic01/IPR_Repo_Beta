@@ -1124,6 +1124,8 @@ def main():
     reports_data_path = os.path.join(PROJECT_DIR, 'reports')
 
     # Build File and File path.
+    """Manual Operation Needed."""
+    ddi_api_call = False
     src_file_name = 'IPAM-to-IPR-20191002 - MODDED FULL - JE (1).xlsx - Diff.xlsx'
     src_file = os.path.join(processed_data_path, src_file_name)
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
@@ -1132,7 +1134,7 @@ def main():
     merge_file = os.path.join(reports_data_path, 'Merge Import.csv')
     disposition_file = os.path.join(reports_data_path,
                                     'Merge Disposition Import.csv')
-    delete_file = os.path.join(reports_data_path, 'Delete Import.csv')
+    delete_file = os.path.join(reports_data_path, 'Delete MANUALLY.csv')
     override_file = os.path.join(reports_data_path, 'Override Import.csv')
     report_file = os.path.join(reports_data_path, 'Import Report' + ' ' +
                                src_file_name)
@@ -1230,7 +1232,7 @@ def main():
     views = _get_views(src_data)
 
     # Update to True if a fresh set of data is needed from ddi.
-    ddi_api_call = False
+
     if ddi_api_call:
         logger.info('ddi_api_call has been set to True.  Querying DDI.')
         get_ddi_ip_data(views, ea_data_file, ddi_data_file, logger)

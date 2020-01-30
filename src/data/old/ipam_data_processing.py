@@ -556,9 +556,9 @@ class IpamDataProcessed(BaseIpamProcessing):
                 self.filename_cls.free_space_df_filename(),
                 free_space_df)
 
-        def _non_confliction_data_processing(new_ip_data,
-                                             no_conflict_df,
-                                             sheetname):
+        def non_confliction_data_processing(new_ip_data,
+                                            no_conflict_df,
+                                            sheetname):
             labels = no_conflict_df.columns.values.tolist()
             new_ip_data_df = pd.DataFrame(new_ip_data, columns=labels)
             cleaned_new_ip_data_df = new_ip_data_df.drop(
@@ -921,7 +921,7 @@ class IpamDataProcessed(BaseIpamProcessing):
                 self.dir_cls.processed_dir(),
                 self.filename_cls.conflict_error_filename(),
                 conflict_errored)
-            non_conflicted_df = _non_confliction_data_processing(
+            non_conflicted_df = non_confliction_data_processing(
                 new_ip_data, non_conflicted_ip_df, 'Conflict Add Updates')
             _confliction_data_processing(old_ip_data, non_conflicted_ip_df)
             _build_free_space_tab(non_conflicted_df)
@@ -932,7 +932,7 @@ class IpamDataProcessed(BaseIpamProcessing):
                 self.dir_cls.processed_dir(),
                 self.filename_cls.overlap_error_filename(),
                 overlap_errored)
-            non_conflicted_df = _non_confliction_data_processing(
+            non_conflicted_df = non_confliction_data_processing(
                 new_ip_data, non_overlapping_ip_df, 'Overlap Add Updates')
             non_conflicted_df.to_excel(writer, sheet_name='Summary Forecast',
                                        index=False)

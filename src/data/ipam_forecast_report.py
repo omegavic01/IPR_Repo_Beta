@@ -1,22 +1,18 @@
 #!/usr/bin/python
-import time
-from collections import OrderedDict
-from ipaddr import IPv4Network
-from netaddr import IPNetwork
 import netaddr
 import pandas as pd
 from openpyxl import Workbook
 import os
-from builder import Cgn
-from ipam_base_processing import BaseIpamProcessing
+from ipam_processed_processing import IpamDataProcessed
+from builder import Writer
 
 
-class IpamForecastProcessing(BaseIpamProcessing):
+class IpamForecastProcessing(IpamDataProcessed):
     """Class built for IPR project to build out a forecast report."""
     def __init__(self):
-        BaseIpamProcessing.__init__(self)
+        IpamDataProcessed.__init__(self)
 
-    def _summary_forecast(self, conflict, overlap, ipr_d):
+    def summary_forecast(self, conflict, overlap, ipr_d):
 
         def get_free_space_dataset(free_space_dataset):
             # Logic for the free space initial compilation.
@@ -121,7 +117,7 @@ class IpamForecastProcessing(BaseIpamProcessing):
         def get_master_df():
             return self.reader_cls.read_from_pkl(
                 self.dir_cls.raw_dir(),
-                self.filename_cls.master_df_filename())
+                self.filename_cls.potential_updates_df_filename())
 
         def get_free_space_df():
             return self.reader_cls.read_from_pkl(
@@ -248,7 +244,7 @@ class IpamForecastProcessing(BaseIpamProcessing):
             regional_free_space_dataset = get_free_space_dataset(
                 convert_df_to_nested_array(get_free_space_df()))
 
-        if full_dataset_ipr_d:
+        if ipr_d:
             conflicted_list = []
             cleaned_data = []
             master_ip_df = get_master_df()
@@ -264,9 +260,9 @@ class IpamForecastProcessing(BaseIpamProcessing):
             for full_dataset_list in full_dataset_listed:
                 if isinstance(full_dataset_list[ipr_index], float):
                     continue
-                if full_dataset_ipr_d in full_dataset_list[ipr_index]:
+                if ipr_d in full_dataset_list[ipr_index]:
                     temp_list = full_dataset_list[ipr_index].split(', ')
-                    temp_list.remove(full_dataset_ipr_d)
+                    temp_list.remove(ipr_d)
                     full_dataset_list[ipr_index] = seperator.join(
                         temp_list)
                     conflicted_list.append(full_dataset_list)
@@ -320,56 +316,106 @@ class IpamForecastProcessing(BaseIpamProcessing):
             new_data.append(new_ipr_record)
         return old_data, new_data, cleaned_data, errored_data
 
-    _clear_vrf(vrf_dict)
-    _vrf_summaries_processing(vrf_idx, vrf_o_c_dict)
-    _build_free_space_tab(summary_df)
-    # Conflict Updates
-    if summary:
-        old_ip_data, new_ip_data, non_conflicted_ip_df, conflict_errored = \
-            _summary_forecast(True, False, False)
-        self.writer_cls.write_to_csv_w(
-            self.dir_cls.processed_dir(),
-            self.filename_cls.conflict_error_filename(),
-            conflict_errored)
-        non_conflicted_df = _non_confliction_data_processing(
-            new_ip_data, non_conflicted_ip_df, 'Conflict Add Updates')
-        _confliction_data_processing(old_ip_data, non_conflicted_ip_df)
-        _build_free_space_tab(non_conflicted_df)
-        # Overlap Updates
-        old_ip_data, new_ip_data, non_overlapping_ip_df, overlap_errored = \
-            _summary_forecast(False, True, False)
-        self.writer_cls.write_to_csv_w(
-            self.dir_cls.processed_dir(),
-            self.filename_cls.overlap_error_filename(),
-            overlap_errored)
-        non_conflicted_df = _non_confliction_data_processing(
-            new_ip_data, non_overlapping_ip_df, 'Overlap Add Updates')
-        non_conflicted_df.to_excel(writer, sheet_name='Summary Forecast',
-                                   index=False)
-        _overlap_data_processing(old_ip_data, non_conflicted_df)
-    if full_dataset_ipr_d:
-        old_ip_data, new_ip_data, non_ipr_d_df, ipr_d_errored = \
-            _summary_forecast(False, False, full_dataset_ipr_d)
-        new_ip_data = new_ip_data + old_ip_data
-        self.writer_cls.write_to_csv_w(
-            self.dir_cls.processed_dir(),
-            self.filename_cls.overlap_error_filename(),
-            ipr_d_errored)
+    def non_confliction_data_processing(self,
+                                        new_ip_data,
+                                        no_conflict_df,
+                                        sheetname):
+        labels = no_conflict_df.columns.values.tolist()
+        new_ip_data_df = pd.DataFrame(new_ip_data, columns=labels)
+        cleaned_new_ip_data_df = new_ip_data_df.drop(
+            new_ip_data_df.columns[17:],
+            axis=1)
+        cleaned_new_ip_data_df.to_excel(self.writer,
+                                        sheet_name=sheetname,
+                                        index=False)
+        forecast_ip_df = pd.concat([new_ip_data_df, no_conflict_df],
+                                   ignore_index=True)
+        forecast_ip_df = forecast_ip_df.drop(
+            forecast_ip_df.columns[17:],
+            axis=1)
+        forecast_ip_df = self.split_out_network(
+            forecast_ip_df,
+            'IPv4 Subnet')
+        forecast_ip_df = self.sort_df_by_oct_list(forecast_ip_df)
+        forecast_ip_df = forecast_ip_df.reset_index()
+        del forecast_ip_df['index']
+        forecast_ip_df['Index'] = forecast_ip_df.index + 10001
+        forecast_overlaps, forecast_conflicts = \
+            IpamDataProcessed.conflict_overlap_check(forecast_ip_df)
+        self._update_df_conflict_overlap_data(forecast_overlaps,
+                                              forecast_conflicts,
+                                              forecast_ip_df)
+        forecast_ip_df.to_pickle(self.dir_cls.raw_dir() + '/' +
+                                 self.filename_cls.
+                                 conflict_free_df_filename())
+        #forecast_ip_df.to_excel(writer, sheet_name='Summary Forecast',
+        #                        index=False)
+        return forecast_ip_df
 
-        def _write_output(diff_list, output_file):
-            """Write Output"""
-            w_b = Workbook()
-            w_s = w_b.active
-            w_s.title = 'IPR_Diff'
-            for row_indx, stuff in enumerate(diff_list):
-                if row_indx == 0:
-                    continue
-                for col_indx, item in enumerate(stuff):
-                    w_s.cell(row=row_indx + 1, column=col_indx + 1,
-                             value=item)
-            w_b.save(output_file)
+    @staticmethod
+    def _write_output(diff_list, output_file):
+        """Write Output"""
+        w_b = Workbook()
+        w_s = w_b.active
+        w_s.title = 'IPR_Diff'
+        for row_indx, stuff in enumerate(diff_list):
+            if row_indx == 0:
+                continue
+            for col_indx, item in enumerate(stuff):
+                w_s.cell(row=row_indx + 1, column=col_indx + 1,
+                         value=item)
+        w_b.save(output_file)
 
-        output_file = os.path.join(self.dir_cls.processed_dir(),
-                                   'Modded Data.xlsx')
 
-        _write_output(new_ip_data, output_file)
+# Here goes!
+time_to_summarize = IpamForecastProcessing()
+
+# Deals with the ipr conflict data.
+old_ip_data, new_ip_data, non_conflicted_ip_df, conflict_errored = \
+    time_to_summarize.summary_forecast(True, False, False)
+
+# Instantiates Writer
+time_to_write = Writer()
+
+# Writes out errored conflict data.
+time_to_write.write_to_csv_w(
+    time_to_summarize.dir_cls.processed_dir(),
+    time_to_summarize.filename_cls.conflict_error_filename(),
+    conflict_errored)
+
+non_conflicted_df = \
+    time_to_summarize.\
+    non_confliction_data_processing(
+        new_ip_data,
+        non_conflicted_ip_df,
+        'Conflict Add Updates')
+
+#    _confliction_data_processing(old_ip_data, non_conflicted_ip_df)
+#    _build_free_space_tab(non_conflicted_df)
+#    # Overlap Updates
+#    old_ip_data, new_ip_data, non_overlapping_ip_df, overlap_errored = \
+#        _summary_forecast(False, True, False)
+#    self.writer_cls.write_to_csv_w(
+#        self.dir_cls.processed_dir(),
+#        self.filename_cls.overlap_error_filename(),
+#        overlap_errored)
+#    non_conflicted_df = _non_confliction_data_processing(
+#        new_ip_data, non_overlapping_ip_df, 'Overlap Add Updates')
+#    non_conflicted_df.to_excel(writer, sheet_name='Summary Forecast',
+#                               index=False)
+#    _overlap_data_processing(old_ip_data, non_conflicted_df)
+#if full_dataset_ipr_d:
+#    old_ip_data, new_ip_data, non_ipr_d_df, ipr_d_errored = \
+#        _summary_forecast(False, False, full_dataset_ipr_d)
+#    new_ip_data = new_ip_data + old_ip_data
+#    self.writer_cls.write_to_csv_w(
+#        self.dir_cls.processed_dir(),
+#        self.filename_cls.overlap_error_filename(),
+#        ipr_d_errored)
+#
+#
+#
+#    output_file = os.path.join(self.dir_cls.processed_dir(),
+#                               'Modded Data.xlsx')
+#
+#    _write_output(new_ip_data, output_file)

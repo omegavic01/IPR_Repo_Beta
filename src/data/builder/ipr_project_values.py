@@ -247,60 +247,48 @@ class DataFileNames:
 
     @staticmethod
     def global_addresses_lib():
-        """Returns source filename for global addresses."""
         return 'global_addresses.pkl'
 
     @staticmethod
     def errored_import_configs():
-        """Returns source filename for global addresses."""
         return 'errored_import_lines.csv'
 
     @staticmethod
     def errored_import_add_and_del_configs():
-        """Returns source filename for global addresses."""
         return 'errored_import_add_and_del_lines.csv'
 
     @staticmethod
     def hold_my_beer_report():
-        """Returns source filename for global addresses."""
         return 'hold_my_bear_report.xlsx'
 
     @staticmethod
     def master_df_filename():
-        """Returns source filename for global addresses."""
         return 'master_df.pkl'
 
     @staticmethod
     def free_space_df_filename():
-        """Returns source filename for global addresses."""
         return 'free_space_df.pkl'
 
     @staticmethod
     def conflict_free_df_filename():
-        """Returns source filename for global addresses."""
         return 'conflict_free_df.pkl'
 
     @staticmethod
     def conflict_error_filename():
-        """Returns source filename for global addresses."""
         return 'conflict_error.csv'
 
     @staticmethod
     def overlap_error_filename():
-        """Returns source filename for global addresses."""
         return 'overlap_error.csv'
 
     @staticmethod
     def full_dataset_df_filename():
-        """Returns source filename for global addresses."""
         return 'full_dataset.pkl'
 
     @staticmethod
     def summary_forecast_df_filename():
-        """Returns source filename for global addresses."""
         return 'summary_forecast.pkl'
 
     @staticmethod
     def potential_updates_df_filename():
-        """Returns source filename for global addresses."""
         return 'potential_updates.pkl'

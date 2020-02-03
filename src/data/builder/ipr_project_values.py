@@ -22,6 +22,10 @@ class EnvironmentValues:
         self._tacacs_username = os.environ.get("TACACS_USERNAME")
         self._tacacs_password = os.environ.get("TACACS_PASSWORD")
         self._tody_cools = os.environ.get("TODY_COOLS")
+        self._apac_subnet = os.environ.get("APAC_SUBNET")
+        self._emea_subnet = os.environ.get("EMEA_SUBNET")
+        self._latam_subnet = os.environ.get("LATAM_SUBNET")
+        self._na_subnet = os.environ.get("NA_SUBNET")
 
     def payload_url(self):
         """Returns DDI_URL from .env file."""
@@ -54,6 +58,10 @@ class EnvironmentValues:
     def tody_cools(self):
         """Returns TODY_COOLS IP from .env file."""
         return self._tody_cools
+
+    def apac_subnet(self):
+        """Returns TODY_COOLS IP from .env file."""
+        return self._apac_subnet
 
 
 class DirectoryValues:

@@ -20,10 +20,10 @@ class IpamForecastProcessing(IpamDataProcessed):
             free_emea_subnets = []
             free_latam_subnets = []
             free_na_subnets = []
-            apac_subnet = netaddr.IPNetwork('10.224.0.0/12')
-            emea_subnet = netaddr.IPNetwork('10.128.0.0/11')
-            latam_subnet = netaddr.IPNetwork('10.240.0.0/13')
-            na_subnet = netaddr.IPNetwork('10.192.0.0/11')
+            apac_subnet = netaddr.IPNetwork(self.env_cls.apac_subnet())
+            emea_subnet = netaddr.IPNetwork(self.env_cls.emea_subnet())
+            latam_subnet = netaddr.IPNetwork(self.env_cls.latam_subnet())
+            na_subnet = netaddr.IPNetwork(self.env_cls.na_subnet())
             region_subnet_list = [apac_subnet, emea_subnet, latam_subnet,
                                   na_subnet]
             free_region_subnet_list = [free_apac_subnets,
@@ -316,6 +316,63 @@ class IpamForecastProcessing(IpamDataProcessed):
             new_data.append(new_ipr_record)
         return old_data, new_data, cleaned_data, errored_data
 
+    @staticmethod
+    def update_df_conflict_overlap_data(overlaps, conflicts, update_df):
+        """
+        Function to build out the summary dataframe with the identified
+        information gathered from the _conflict_overlap_check function call.
+        """
+
+        # Adds new columns to the summary dataframe.
+        update_df['Conflict Subnet Overlap - Index No.'] = ''
+        update_df['Conflict Subnet - Index No.'] = ''
+        update_df['No Overlap'] = ''
+        update_df['No Conflict'] = ''
+        update_df['Conflict Subnet Overlap - Count'] = ''
+        update_df['Conflict Subnet - Count'] = ''
+
+        # Loops through to update new columns.
+        for row in update_df.index.values:
+            # Overlap Updates.
+            if overlaps[update_df.loc[row, 'IPv4 Subnet']]:
+                if len(overlaps[update_df.loc[row, 'IPv4 Subnet']]) > 1:
+                    update_df.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        ', '.join(str(e) for e in overlaps[
+                            update_df.loc[row, 'IPv4 Subnet']])
+                    update_df.loc[
+                        row, 'Conflict Subnet Overlap - Count'] = \
+                        len(overlaps[update_df.loc[row, 'IPv4 Subnet']])
+                else:
+                    update_df.loc[
+                        row, 'Conflict Subnet Overlap - Index No.'] = \
+                        overlaps[update_df.loc[row, 'IPv4 Subnet']][0]
+                    update_df.loc[row, 'Conflict Subnet Overlap - Count'] = 1
+                update_df.loc[row, 'No Overlap'] = 'NO'
+            else:
+                update_df.loc[row, 'No Overlap'] = 'YES'
+            # Conflict Updates.
+            if len(conflicts[update_df.loc[row, 'IPv4 Subnet']]) > 2:
+                temp_list = conflicts[
+                    update_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                update_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                    ', '.join(str(e) for e in temp_list)
+                update_df.loc[row, 'No Conflict'] = 'NO'
+                update_df.loc[row, 'Conflict Subnet - Count'] = len(temp_list)
+            elif len(conflicts[update_df.loc[row, 'IPv4 Subnet']]) == 2:
+                temp_list = conflicts[
+                    update_df.loc[row, 'IPv4 Subnet']].copy()
+                temp_list.remove(row + 10001)
+                update_df.loc[row, 'Conflict Subnet - Index No.'] = \
+                    temp_list[0]
+                update_df.loc[row, 'No Conflict'] = 'NO'
+                update_df.loc[row, 'Conflict Subnet - Count'] = 1
+            else:
+                update_df.loc[row, 'No Conflict'] = 'YES'
+
+        return update_df
+
     def non_confliction_data_processing(self,
                                         new_ip_data,
                                         no_conflict_df,
@@ -342,9 +399,10 @@ class IpamForecastProcessing(IpamDataProcessed):
         forecast_ip_df['Index'] = forecast_ip_df.index + 10001
         forecast_overlaps, forecast_conflicts = \
             IpamDataProcessed.conflict_overlap_check(forecast_ip_df)
-        self._update_df_conflict_overlap_data(forecast_overlaps,
-                                              forecast_conflicts,
-                                              forecast_ip_df)
+        self.update_df_conflict_overlap_data(
+            forecast_overlaps,
+            forecast_conflicts,
+            forecast_ip_df)
         forecast_ip_df.to_pickle(self.dir_cls.raw_dir() + '/' +
                                  self.filename_cls.
                                  conflict_free_df_filename())

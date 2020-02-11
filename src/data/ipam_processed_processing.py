@@ -420,9 +420,6 @@ class IpamDataProcessed(BaseIpamProcessing):
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
-                're-ip', na=False)]
-        temp_df = temp_df[
-            ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'leaf', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(

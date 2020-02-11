@@ -192,6 +192,8 @@ def _write_output_for_import_report_xlsx(
             len(data['del']) + \
             row + 2 * row
         for column, value in enumerate(line):
+            if column > len(ddi_structure) - 1:
+                break
             # Write IPAM data.
             worksheet.write_string(
                 internal_row,
@@ -676,6 +678,12 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
         """Handles the add's and del import's."""
         del_list = ['del']
         for add_or_del_row in src_data:
+            # In DB check.
+            if add_or_del_row[1] not in \
+                    ddi_data[views_index[add_or_del_row[15]]]:
+                add_or_del_row[16] = 'Missing network in ipam db.'
+                errored_list.append(add_or_del_row)
+                continue
             # Add Check.
             if 'add' in add_or_del_row[0]:
                 if add_or_del_row[15] in ddi_views and \
@@ -722,6 +730,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             # If no IPR D in extattrs dict stores the src data for updates.
             if disposition_row[1] not in ddi_data[ddi_index]:
                 continue
+            if disposition_row[0] == 'replace':
+                disposition_row[0] = 're-ip'
             if disposition_row[0] in ea_listed_values['IPR Designation'] and \
                     'IPR Designation' not in \
                     ddi_data[ddi_index][disposition_row[1]]['extattrs']:
@@ -835,7 +845,8 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                     ipr_temp_list = []
                     ipam_temp_list = []
                     # Building list for diff's against DDI data.
-                    if ea_row[0] in ea_listed_values[key]:
+                    if ea_row[0] in ea_listed_values[key] \
+                            and ea_row[0] not in ea_row[value]:
                         ipr_temp_list.append(ea_row[0])
                     # Extend list if listed values in IPR D column.
                     if ',' in ea_row[ea_index[key]]:
@@ -1126,7 +1137,9 @@ def main():
     # Build File and File path.
     """Manual Operation Needed."""
     ddi_api_call = False
-    src_file_name = 'IPAM-to-IPR-20191002 - MODDED FULL - JE (1).xlsx - Diff.xlsx'
+    src_file_name = 'IP NA .xlsx'
+    sheet_index = 0
+
     src_file = os.path.join(processed_data_path, src_file_name)
     ea_data_file = os.path.join(raw_data_path, 'ea_data.pkl')
     ddi_data_file = os.path.join(raw_data_path, 'ddi_data.pkl')
@@ -1144,7 +1157,7 @@ def main():
 
     logger.info('Loading Data from source file')
     src_wb = open_workbook(src_file)
-    src_ws = src_wb.sheet_by_index(0)
+    src_ws = src_wb.sheet_by_index(sheet_index)
 
     def clean_data(data):
         """Build listed dataset from worksheet."""

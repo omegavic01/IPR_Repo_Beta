@@ -1,0 +1,27 @@
+digraph "classes_ipam_base_processing" {
+charset="utf-8"
+rankdir=BT
+"0" [label="builder.ipr_project_values.DataFileNames", shape="record"];
+"1" [label="builder.ipr_project_values.DirectoryValues", shape="record"];
+"2" [label="builder.ipr_project_values.EnvironmentValues", shape="record"];
+"3" [label="builder.ipr_project_values.LoggingValues", shape="record"];
+"4" [label="builder.reader.Reader", shape="record"];
+"5" [label="builder.writer.Writer", shape="record"];
+"6" [label="ipam_base_processing.BaseIpamProcessing", shape="record"];
+"7" [label="logging.Filterer", shape="record"];
+"8" [label="logging.Logger", shape="record"];
+"9" [label="logging.Manager", shape="record"];
+"10" [label="logging.RootLogger", shape="record"];
+"8" -> "7" [arrowhead="empty", arrowtail="none"];
+"10" -> "8" [arrowhead="empty", arrowtail="none"];
+"0" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="filename_cls", style="solid"];
+"1" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="dir_cls", style="solid"];
+"2" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="env_cls", style="solid"];
+"3" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="_log_cls", style="solid"];
+"4" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="reader_cls", style="solid"];
+"5" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="writer_cls", style="solid"];
+"8" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="_logger", style="solid"];
+"9" -> "8" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="manager", style="solid"];
+"9" -> "8" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="manager", style="solid"];
+"10" -> "6" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="_logger", style="solid"];
+}

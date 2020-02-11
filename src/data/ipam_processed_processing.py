@@ -420,6 +420,9 @@ class IpamDataProcessed(BaseIpamProcessing):
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
+                're-ip', na=False)]
+        temp_df = temp_df[
+            ~temp_df['extattrs_IPR Designation_value'].str.contains(
                 'leaf', na=False)]
         temp_df = temp_df[
             ~temp_df['extattrs_IPR Designation_value'].str.contains(
@@ -565,6 +568,7 @@ class IpamDataProcessed(BaseIpamProcessing):
 
         # A nested list of attributes used for spreadsheet tab creation.
         processing_data_worksheets = [
+            ['re-ip', 'extattrs_IPR Designation_value', 'Filt-Re-IP', False],
             ['leaf', 'extattrs_IPR Designation_value', 'Filt-Leaf', False],
             ['dup', 'extattrs_IPR Designation_value', 'Filt-Dup', False],
             ['ignore', 'extattrs_IPR Designation_value', 'Filt-Ignore', False],

@@ -60,8 +60,16 @@ class EnvironmentValues:
         return self._tody_cools
 
     def apac_subnet(self):
-        """Returns TODY_COOLS IP from .env file."""
         return self._apac_subnet
+
+    def emea_subnet(self):
+        return self._emea_subnet
+
+    def latam_subnet(self):
+        return self._latam_subnet
+
+    def na_subnet(self):
+        return self._na_subnet
 
 
 class DirectoryValues:
@@ -272,6 +280,10 @@ class DataFileNames:
     @staticmethod
     def master_df_filename():
         return 'master_df.pkl'
+
+    @staticmethod
+    def master_df_wo_re_ip_filename():
+        return 'master_df_wo_re_ip.pkl'
 
     @staticmethod
     def free_space_df_filename():

@@ -8,13 +8,14 @@ import socket
 import struct
 import re
 import logging
+import netaddr
 from xlrd import open_workbook
 import xlsxwriter
 import requests
 from dotenv import find_dotenv, load_dotenv
 from builder import DataFileNames, DirectoryValues
 from builder import Writer, Reader
-from agency_vrf_view_libs import ReadLibraries
+from agency_vrf_view_libs import ReadLibraries, BuildLibraries
 
 
 def cidr_to_netmask(cidr):
@@ -678,10 +679,16 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
         """Handles the add's and del import's."""
         del_list = ['del']
         for add_or_del_row in src_data:
-            # In DB check.
-            if add_or_del_row[1] not in \
-                    ddi_data[views_index[add_or_del_row[15]]]:
-                add_or_del_row[16] = 'Missing network in ipam db.'
+            # Checks for add and ip in ipam..
+            if add_or_del_row[1] in ddi_data[views_index[add_or_del_row[15]]] \
+                    and add_or_del_row[0] in ['add']:
+                add_or_del_row[16] = 'Network in ipam db.'
+                errored_list.append(add_or_del_row)
+                continue
+            # Checks for ip not in ipam and no add or del.
+            if add_or_del_row[1] not in ddi_data[views_index[add_or_del_row[15]]] \
+                    and add_or_del_row[0] not in ['add', 'del']:
+                add_or_del_row[16] = 'Need to add. Not found in ipam.'
                 errored_list.append(add_or_del_row)
                 continue
             # Add Check.
@@ -1137,7 +1144,7 @@ def main():
     # Build File and File path.
     """Manual Operation Needed."""
     ddi_api_call = False
-    src_file_name = 'IP NA .xlsx'
+    src_file_name = 'OMG AWS EU-WEST-1 -ADD- 2020-02-10.xlsx'
     sheet_index = 0
 
     src_file = os.path.join(processed_data_path, src_file_name)
@@ -1153,6 +1160,7 @@ def main():
                                src_file_name)
 
     vrf_to_view = read_lib_cls.read_vrf_to_view()
+    build_lib_cls.build_ipam_agency_list()
     agencies = read_lib_cls.read_agency_list()
 
     logger.info('Loading Data from source file')
@@ -1172,6 +1180,8 @@ def main():
             cleaning_data = data.row_values(row)
             if cleaning_data[1].strip() == '' and \
                     cleaning_data[15].strip() == '':
+                cleaning_data[16] = 'No Subnet and No View'
+                not_properly_built.append(cleaning_data)
                 continue
             # Capture lines that do not have a view listed. Sometimes add
             # dispostions do not have a view listed.  This will help populated.
@@ -1204,15 +1214,32 @@ def main():
                 cleaning_data[16] = 'Missing View.'
                 not_properly_built.append(cleaning_data)
                 continue
+
+            # Check for proper subnet format
+            try:
+                netaddr.IPNetwork(cleaning_data[1])
+            except netaddr.AddrFormatError:
+                cleaning_data[16] = 'Improper Network Format'
+                not_properly_built.append(cleaning_data)
+                continue
+
+            # Check for valid cidr
+            if netaddr.IPNetwork(cleaning_data[1]).value != \
+                    netaddr.IPNetwork(cleaning_data[1]).cidr.value:
+                cleaning_data[16] = 'Improper Cidr for Subnet'
+                not_properly_built.append(cleaning_data)
+                continue
+
+            # Check for valid agency.
+            if cleaning_data[10].strip() in agencies or \
+                            cleaning_data[10].strip() == '':
+                cleaning_data[10] = cleaning_data[10].strip()
+            else:
+                cleaning_data[16] = 'Could not find agency name.'
+                not_properly_built.append(row)
+                continue
             src_list.append(cleaning_data)
 
-        # Clean's src_list values.
-        # Removes erred agencies.
-        for enum, row in enumerate(src_list):
-            if row[10] in agencies:
-                continue
-            else:
-                src_list[enum][10] = ''
         # Removes tab's that may have been incorrectly inserted.
         src_list = [[item.replace('\t', '') for item in row
                      if isinstance(item, str)]
@@ -1307,6 +1334,7 @@ if __name__ == '__main__':
     dir_cls = DirectoryValues()
     filenames_cls = DataFileNames()
     read_lib_cls = ReadLibraries()
+    build_lib_cls = BuildLibraries()
     reader_cls = Reader()
 
     main()

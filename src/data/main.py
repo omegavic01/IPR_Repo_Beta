@@ -3,6 +3,7 @@ from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
 from ipam_processed_processing import IpamDataProcessed
 from ipam_interim_processing import IpamDataInterim
+# Need forecast import.
 from ipam_reports import IpamReports
 import time
 
@@ -18,6 +19,7 @@ desktop application.  For external party use.
 gather_current_ipam_data = True
 run_ipam_data_processing_interim = True
 run_ipam_data_processing_processed = True
+run_ipam_forecast = True
 run_ipam_reports = True
 
 start_time = time.perf_counter()
@@ -58,6 +60,13 @@ Example Notebook: ipam_data_processed.ipynb (Not in gitHub yet...)
 if run_ipam_data_processing_processed:
     ipam_processing = IpamDataProcessed()
     ipam_processing.run_ipam_processing()
+
+"""
+This grouping is if you would like to perform forecast reporting.
+"""
+if run_ipam_forecast:
+    # Need to fill in.
+    pass
 
 """
 This grouping is for the final reports that are generated for production use.

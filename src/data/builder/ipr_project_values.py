@@ -312,3 +312,7 @@ class DataFileNames:
     @staticmethod
     def potential_updates_df_filename():
         return 'potential_updates.pkl'
+
+    @staticmethod
+    def re_ip_filename():
+        return 're-ip.xlsx'

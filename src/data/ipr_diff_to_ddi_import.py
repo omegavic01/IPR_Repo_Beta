@@ -683,13 +683,13 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             if add_or_del_row[1] in ddi_data[views_index[add_or_del_row[15]]] \
                     and add_or_del_row[0] in ['add']:
                 add_or_del_row[16] = 'Network in ipam db.'
-                errored_list.append(add_or_del_row)
+                errored_list.append(add_or_del_row[0:17])
                 continue
             # Checks for ip not in ipam and no add or del.
             if add_or_del_row[1] not in ddi_data[views_index[add_or_del_row[15]]] \
                     and add_or_del_row[0] not in ['add', 'del']:
                 add_or_del_row[16] = 'Need to add. Not found in ipam.'
-                errored_list.append(add_or_del_row)
+                errored_list.append(add_or_del_row[0:17])
                 continue
             # Add Check.
             if 'add' in add_or_del_row[0]:
@@ -701,7 +701,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
                 if add_or_del_row[1] in \
                         ddi_data[views_index[add_or_del_row[15]]]:
                     add_or_del_row[16] = 'Found in ipam database.'
-                    errored_list.append(add_or_del_row)
+                    errored_list.append(add_or_del_row[0:17])
                     continue
                 else:
                     import_add.append(add_or_del_row)
@@ -719,7 +719,7 @@ def _get_diff_data(views_index, src_data, ea_index, ddi_data, ddi_views):
             elif add_or_del_row[0] in del_list and add_or_del_row[1] not in \
                     ddi_data[views_index[add_or_del_row[15]]]:
                 add_or_del_row[16] = 'Missing network in ipam db.'
-                errored_list.append(add_or_del_row)
+                errored_list.append(add_or_del_row[0:17])
                 continue
             unused_list.append(add_or_del_row)
         if errored_list:
@@ -1144,7 +1144,7 @@ def main():
     # Build File and File path.
     """Manual Operation Needed."""
     ddi_api_call = False
-    src_file_name = 'OMG AWS EU-WEST-1 -ADD- 2020-02-10.xlsx'
+    src_file_name = 'IP EMEA  (2).xlsx'
     sheet_index = 0
 
     src_file = os.path.join(processed_data_path, src_file_name)
@@ -1181,7 +1181,7 @@ def main():
             if cleaning_data[1].strip() == '' and \
                     cleaning_data[15].strip() == '':
                 cleaning_data[16] = 'No Subnet and No View'
-                not_properly_built.append(cleaning_data)
+                not_properly_built.append(cleaning_data[0:17])
                 continue
             # Capture lines that do not have a view listed. Sometimes add
             # dispostions do not have a view listed.  This will help populated.
@@ -1200,7 +1200,7 @@ def main():
                             vrf_to_view[found_vrf]
                     else:
                         cleaning_data[16] = 'VRF Not Found'
-                        not_properly_built.append(cleaning_data)
+                        not_properly_built.append(cleaning_data[0:17])
                         continue
                     if cleaning_data[10] and cleaning_data[10] \
                             in agencies:
@@ -1212,7 +1212,7 @@ def main():
                         src_list.append(cleaning_data)
                     continue
                 cleaning_data[16] = 'Missing View.'
-                not_properly_built.append(cleaning_data)
+                not_properly_built.append(cleaning_data[0:17])
                 continue
 
             # Check for proper subnet format
@@ -1220,23 +1220,23 @@ def main():
                 netaddr.IPNetwork(cleaning_data[1])
             except netaddr.AddrFormatError:
                 cleaning_data[16] = 'Improper Network Format'
-                not_properly_built.append(cleaning_data)
+                not_properly_built.append(cleaning_data[0:17])
                 continue
 
             # Check for valid cidr
             if netaddr.IPNetwork(cleaning_data[1]).value != \
                     netaddr.IPNetwork(cleaning_data[1]).cidr.value:
                 cleaning_data[16] = 'Improper Cidr for Subnet'
-                not_properly_built.append(cleaning_data)
+                not_properly_built.append(cleaning_data[0:17])
                 continue
 
             # Check for valid agency.
             if cleaning_data[10].strip() in agencies or \
-                            cleaning_data[10].strip() == '':
+                    cleaning_data[10].strip() == '':
                 cleaning_data[10] = cleaning_data[10].strip()
             else:
                 cleaning_data[16] = 'Could not find agency name.'
-                not_properly_built.append(row)
+                not_properly_built.append(row[0:17])
                 continue
             src_list.append(cleaning_data)
 

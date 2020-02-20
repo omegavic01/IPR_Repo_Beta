@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import netaddr
 import pandas as pd
+import os
 from openpyxl import Workbook
 from ipam_processed_processing import IpamDataProcessed
 from builder import Writer
@@ -17,6 +18,20 @@ class IpamForecastProcessing(IpamDataProcessed):
                     self.get_free_space_df()
                 )
             )
+
+    def writer_re_ip_sheet(self, re_ip_list):
+        """Method for writing re-ip data."""
+        workbook_file = os.path.join(
+            self.dir_cls.reports_dir(),
+            self.filename_cls.re_ip_filename()
+        )
+        w_b = Workbook()
+        w_s = w_b.active
+        w_s.title = 'Re-IP'
+        for row_indx, stuff in enumerate(re_ip_list):
+            for col_indx, item in enumerate(stuff[0:17]):
+                w_s.cell(row=row_indx+1, column=col_indx+1, value=item)
+        w_b.save(workbook_file)
 
     @staticmethod
     def get_re_ip_df(master_df):
@@ -272,14 +287,19 @@ if not re_ip_df.empty:
     # Forecasts re-ip data
     re_ip_old, re_ip_new, re_ip_err = \
         time_to_summarize.forecast_core(re_ip_df)
+    # Add a header row.
+    re_ip_new.insert(0, time_to_summarize.env_cls.header_row_list())
+    # Create final list for writing.
+    compiled_data = re_ip_new + re_ip_old
     # Removes re_ip and followup lines from master_df and
     # creates a modified master_df.
-    master_stuff = time_to_summarize.generate_new_df_from_filtered_df(
-        master_stuff,
-        re_ip_df,
-        time_to_summarize.get_master_df_wo_re_ip_filename())
+    time_to_summarize.writer_re_ip_sheet(compiled_data)
+#    master_stuff = time_to_summarize.generate_new_df_from_filtered_df(
+#        master_stuff,
+#        re_ip_df,
+#        time_to_summarize.get_master_df_wo_re_ip_filename())
 
 # Need to capture all followup lines then generate a new df wo followup lines.
 
-if 2 == 2:
-    pass
+#if 2 == 2:
+#    pass

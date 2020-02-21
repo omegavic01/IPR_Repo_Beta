@@ -3,7 +3,7 @@ from ipam_gets_to_writes import IpamGetsToWrite
 from ipam_apirequest_calltypes import IpamApiRequest, IpamCallTypes
 from ipam_processed_processing import IpamDataProcessed
 from ipam_interim_processing import IpamDataInterim
-# Need forecast import.
+from ipam_forecast import IpamForecastProcessing
 from ipam_reports import IpamReports
 import time
 
@@ -65,8 +65,24 @@ if run_ipam_data_processing_processed:
 This grouping is if you would like to perform forecast reporting.
 """
 if run_ipam_forecast:
-    # Need to fill in.
-    pass
+    # Instantiates Class
+    time_to_summarize = IpamForecastProcessing()
+    # Get's master_df
+    master_stuff = time_to_summarize.get_master_df()
+
+    # Pull's out IPR D: re-ip data from df.
+    re_ip_df = time_to_summarize.get_re_ip_df(master_stuff)
+    if not re_ip_df.empty:
+        # Forecasts re-ip data
+        re_ip_old, re_ip_new, re_ip_err = \
+            time_to_summarize.forecast_core(re_ip_df)
+        # Add a header row.
+        re_ip_new.insert(0, time_to_summarize.env_cls.header_row_list())
+        # Create final list for writing.
+        compiled_data = re_ip_new + re_ip_old
+        # Removes re_ip and followup lines from master_df and
+        # creates a modified master_df.
+        time_to_summarize.writer_re_ip_sheet(compiled_data)
 
 """
 This grouping is for the final reports that are generated for production use.

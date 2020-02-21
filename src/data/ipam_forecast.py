@@ -4,7 +4,6 @@ import pandas as pd
 import os
 from openpyxl import Workbook
 from ipam_processed_processing import IpamDataProcessed
-from builder import Writer
 
 
 class IpamForecastProcessing(IpamDataProcessed):
@@ -271,33 +270,40 @@ class IpamForecastProcessing(IpamDataProcessed):
             else:
                 dirty_subnet_for_record[comment_index] = \
                     '| replaced by ' + new_subnet_record.__str__() + ' |'
+            # Clean out re-ip
+            if ', re-ip' in dirty_subnet_for_record[ipr_index]:
+                dirty_subnet_for_record[ipr_index] = \
+                    dirty_subnet_for_record[ipr_index].replace('re-ip, ', '')
+            if 're-ip' in dirty_subnet_for_record[ipr_index]:
+                dirty_subnet_for_record[ipr_index] = \
+                    dirty_subnet_for_record[ipr_index].replace('re-ip, ', '')
             old_data.append(dirty_subnet_for_record)
             new_data.append(new_ipr_record)
         return old_data, new_data, errored_data
 
 
-# Instantiates Class
-time_to_summarize = IpamForecastProcessing()
-# Get's master_df
-master_stuff = time_to_summarize.get_master_df()
-
-# Pull's out IPR D: re-ip data from df.
-re_ip_df = time_to_summarize.get_re_ip_df(master_stuff)
-if not re_ip_df.empty:
-    # Forecasts re-ip data
-    re_ip_old, re_ip_new, re_ip_err = \
-        time_to_summarize.forecast_core(re_ip_df)
-    # Add a header row.
-    re_ip_new.insert(0, time_to_summarize.env_cls.header_row_list())
-    # Create final list for writing.
-    compiled_data = re_ip_new + re_ip_old
-    # Removes re_ip and followup lines from master_df and
-    # creates a modified master_df.
-    time_to_summarize.writer_re_ip_sheet(compiled_data)
-#    master_stuff = time_to_summarize.generate_new_df_from_filtered_df(
-#        master_stuff,
-#        re_ip_df,
-#        time_to_summarize.get_master_df_wo_re_ip_filename())
+## Instantiates Class
+#time_to_summarize = IpamForecastProcessing()
+## Get's master_df
+#master_stuff = time_to_summarize.get_master_df()
+#
+## Pull's out IPR D: re-ip data from df.
+#re_ip_df = time_to_summarize.get_re_ip_df(master_stuff)
+#if not re_ip_df.empty:
+#    # Forecasts re-ip data
+#    re_ip_old, re_ip_new, re_ip_err = \
+#        time_to_summarize.forecast_core(re_ip_df)
+#    # Add a header row.
+#    re_ip_new.insert(0, time_to_summarize.env_cls.header_row_list())
+#    # Create final list for writing.
+#    compiled_data = re_ip_new + re_ip_old
+#    # Removes re_ip and followup lines from master_df and
+#    # creates a modified master_df.
+#    time_to_summarize.writer_re_ip_sheet(compiled_data)
+##    master_stuff = time_to_summarize.generate_new_df_from_filtered_df(
+##        master_stuff,
+##        re_ip_df,
+##        time_to_summarize.get_master_df_wo_re_ip_filename())
 
 # Need to capture all followup lines then generate a new df wo followup lines.
 

@@ -59,7 +59,9 @@ class IpamForecastProcessing(IpamDataProcessed):
     @staticmethod
     def get_subnet_ratio(conflict_cidr):
         subnet_ratio = {16: 19, 17: 20, 18: 20, 19: 21, 20: 21,
-                        21: 21, 22: 22, 23: 23, 24: 24, 25: 24}
+                        21: 21, 22: 22, 23: 23, 24: 24, 25: 24,
+                        26: 26, 27: 27, 28: 28, 29: 29, 30: 30,
+                        31: 31, 32: 32}
         if conflict_cidr in subnet_ratio:
             return subnet_ratio[conflict_cidr]
         else:

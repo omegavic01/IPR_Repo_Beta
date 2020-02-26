@@ -72,7 +72,7 @@ if run_ipam_forecast:
 
     # Pull's out IPR D: re-ip data from df.
     re_ip_df = time_to_summarize.get_re_ip_df(master_stuff)
-    if not re_ip_df.empty:
+    if re_ip_df:
         # Forecasts re-ip data
         re_ip_old, re_ip_new, re_ip_err = \
             time_to_summarize.forecast_core(re_ip_df)

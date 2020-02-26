@@ -1066,8 +1066,7 @@ def get_ddi_ip_data(net_views, ea_path, ddi_path, logger):
         ddi_data.pkl
     """
     # Pull down fresh copy of ea-att's
-    logger.info("Getting EA Attributes from DDI.")
-    get_ea_attributes(ea_path, logger)
+    logger.info("Getting DDI Data.")
 
     # Pull down fresh copy of view data
     ddi_data = []
@@ -1144,7 +1143,7 @@ def main():
     # Build File and File path.
     """Manual Operation Needed."""
     ddi_api_call = False
-    src_file_name = 'IP EMEA  (2).xlsx'
+    src_file_name = 'The-re-ip.xlsx'
     sheet_index = 0
 
     src_file = os.path.join(processed_data_path, src_file_name)
@@ -1160,6 +1159,7 @@ def main():
                                src_file_name)
 
     vrf_to_view = read_lib_cls.read_vrf_to_view()
+    get_ea_attributes(ea_data_file, logger)
     build_lib_cls.build_ipam_agency_list()
     agencies = read_lib_cls.read_agency_list()
 

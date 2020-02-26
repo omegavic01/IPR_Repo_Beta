@@ -410,7 +410,7 @@ class IpamDataProcessed(BaseIpamProcessing):
 
         # Building out dataset for summary and uncategorized processing.
         temp_df = temp_df.loc[
-            (temp_df['/Cidr'] != 32) &
+            # (temp_df['/Cidr'] != 32) &
             (temp_df['network'] != '100.88.0.0/29') &
             (temp_df['network'] != '100.64.0.0/29') &
             (temp_df['network_view'] != 'Public-IP') &
